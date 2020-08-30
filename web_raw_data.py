@@ -3,6 +3,7 @@ import subprocess
 from multiprocessing import Queue
 from string import Template
 import aqi_util
+from datetime import datetime
 
 html = Template("""
 <style>
@@ -22,17 +23,24 @@ html = Template("""
 
 .desc {
     color: $FG;
-    font-size: 5vw;
+    font-size: 8vw;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+
+.time {
+    color: $FG;
+    font-size: 6vw;
     font-family: Arial, Helvetica, sans-serif;
     font-weight: bold;
 }
 </style>
-
+<meta http-equiv="refresh" content="$REFRESH">
 <body style="background-color: $BG">
   <html>
     <div class="centered">
         <center> <div class="bignum">$AQI</div> </center>
         <center> <div class="desc">$DESC</div> </center>
+        <center> <div class="time">$TIME</div> </center>
     </div>
   </html>
 </body>
@@ -60,39 +68,49 @@ class RawDataServer (object):
         else:
             return str("None")
 
-    def big_aqi (self, c):
+    def big_aqi (self, c, refresh=100000):
         aqi = aqi_util.aqi_from_concentration(c)
         rgb = aqi[2]
         lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
         bg = to_html_color(rgb)
         fg = to_html_color( (0, 0, 0) if lum > .25 else (.8, .8, .8) )
-        return html.substitute(AQI=str(aqi[0]), BG=bg, FG=fg, DESC=aqi[1])
+        now = datetime.now()
+        return html.substitute(AQI=str(aqi[0]),
+                               BG=bg,
+                               FG=fg,
+                               DESC=aqi[1],
+                               TIME=now.ctime(),
+                               REFRESH=str(refresh))
 
     @cherrypy.expose
     def index (self):
         return self.aqi()
 
-    def show_aqi (self, convert_func):
+    def show_aqi (self, convert_func, refresh):
         if self.ask_queue != None:
             self.ask_queue.put(True)
             val = self.data_queue.get()
             while not self.data_queue.empty():
                 val = self.data_queue.get()
-            return self.big_aqi(convert_func(val[0]))
+            return self.big_aqi(convert_func(val[2]), refresh)
         else:
-            return html.substitute(AQI="OFF")
+            return html.substitute(AQI="OFF",
+                                   REFRESH="10000",
+                                   BG="black",
+                                   FG="white",
+                                   DESC="")
 
     @cherrypy.expose
-    def aqi (self):
-        return self.show_aqi(lambda x: x)
+    def aqi (self, refresh=100000):
+        return self.show_aqi(lambda x: x, refresh)
 
     @cherrypy.expose
-    def lrapa (self):
-        return self.show_aqi(aqi_util.LRAPA_correction)
+    def lrapa (self, refresh=100000):
+        return self.show_aqi(aqi_util.LRAPA_correction, refresh)
 
     @cherrypy.expose
-    def aqandu (self):
-        return self.show_aqi(aqi_util.AQandU_correction)
+    def aqandu (self, refresh=100000):
+        return self.show_aqi(aqi_util.AQandU_correction, refresh)
 
     @cherrypy.expose
     def web_shutdown (self, key="blah"):

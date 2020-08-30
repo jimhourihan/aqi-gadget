@@ -3,6 +3,7 @@ import board
 from adafruit_rgb_display.rgb import color565
 import adafruit_rgb_display.st7789 as st7789
 import subprocess
+import functools
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
@@ -42,7 +43,7 @@ def init_blank ():
     blank_draw  = ImageDraw.Draw(blank_image)
     blank_draw.rectangle([(0, 0), (width, height)], fill=(0, 0, 0))
     s = blank_draw.textsize("AQI", font=bfont)
-    (sx, sy) = ((width - s[0]) / 2.0 - 10, (height - s[1]) / 2.0 - 20)
+    (sx, sy) = ((width - s[0]) / 2.0, (height - s[1]) / 2.0)
     blank_draw.text( (sx, sy), "AQI", font=bfont, fill=(180, 180, 180))
     display.image(blank_image, 90)
     backlight.value = True
@@ -114,6 +115,23 @@ def get_host_info ():
         hostinfo = (lines[0].strip(), lines[1].strip())
     return hostinfo
 
+def get_temperature ():
+    cmd  = 'vcgencmd measure_temp'
+    blob = subprocess.check_output(cmd, shell=True).decode("utf-8")
+    return blob.split('=')[1].strip()
+
+def get_cpu_info ():
+    cmd       = 'ps -eo pcpu,rss --no-headers | grep -E -v "    0"'
+    blob      = subprocess.check_output(cmd, shell=True).decode("utf-8")
+    usages    = list(map(lambda x: float(x.split()[0]), blob.splitlines()))
+    cpu_total = functools.reduce(lambda x, y: x + y, usages)
+    cpu_max   = max(usages)
+    cmd2      = 'cat /proc/cpuinfo'
+    lines     = subprocess.check_output(cmd2, shell=True).decode("utf-8").splitlines()
+    procs     = filter(lambda x: "processor" == x[:9], lines)
+    num_procs = float(len(list(procs)))
+    return (int(cpu_total / num_procs), int(cpu_max), int(num_procs))
+
 def draw_packet (packet):
     global mode
     converter = None
@@ -125,13 +143,18 @@ def draw_packet (packet):
         converter = aqi_util.AQandU_correction
 
     if converter:
-        raqi = aqi_util.aqi_from_concentration(converter(packet[0]))
-        delta = packet[2]
+        raqi = aqi_util.aqi_from_concentration(converter(packet[2]))
+        delta = packet[3]
         draw_aqi(raqi[0], raqi[2], raqi[1], mode, delta)
     elif mode == "IP":
         draw_message("IP Address", get_host_info()[1])
     elif mode == "HOST":
         draw_message("Hostname", get_host_info()[0])
+    elif mode == "TEMP":
+        draw_message("Tempurature", get_temperature())
+    elif mode == "CPU":
+        info = get_cpu_info()
+        draw_message(str(info[2]) + " Cores", str(info[0]) + "% | " + str(info[1]) + "%")
     else:
         draw_clear()
 

@@ -12,7 +12,8 @@ _emulate         = False
 uart             = None
 buffer           = []
 last_sample_time = 0.0
-avg_pm25         = 0
+avg_1m_pm25      = 0
+avg_15s_pm25     = 0
 avg_delta        = 0
 pm25_buffer      = []
 
@@ -28,7 +29,8 @@ def init (emulate=False):
 
 def emulate_read_packet ():
     global last_sample_time
-    global avg_pm25
+    global avg_1m_pm25
+    global avg_15s_pm25
     global avg_delta
     current_time = time.time()
     if last_sample_time == 0:
@@ -37,16 +39,18 @@ def emulate_read_packet ():
     s = math.sin(t / 7.0) * 0.5 + 0.5
     time.sleep(0.5)
     pm25 = s * 200.0
-    avg_delta = pm25 - avg_pm25
-    avg_pm25 = pm25
-    return (pm25, avg_pm25, avg_delta, current_time, "OK")
+    avg_delta = pm25 - avg_1m_pm25
+    avg_1m_pm25 = pm25
+    avg_15s_pm25 = pm25
+    return (pm25, avg_1m_pm25, avg_15s_pm25, avg_delta, current_time, "OK")
 
 def read_packet ():
     if _emulate:
         return emulate_read_packet()
 
     global buffer
-    global avg_pm25
+    global avg_1m_pm25
+    global avg_15s_pm25
     global pm25_buffer
     global last_sample_time
     global avg_delta
@@ -100,16 +104,22 @@ def read_packet ():
         while len(pm25_buffer) > 27:
             pm25_buffer.pop(0)
 
-        last_avg = avg_pm25
-        avg_pm25 = 0
+        last_avg = avg_1m_pm25
+        avg_1m_pm25 = 0
+        avg_15s_pm25 = 0
+        count = 0
         for (pm25_samp, time_samp) in pm25_buffer:
-            avg_pm25 += pm25_samp
-        avg_pm25 /= len(pm25_buffer)
-        avg_delta = (avg_pm25 - last_avg) / elapsed
+            avg_1m_pm25 += pm25_samp
+            if count < 6:
+                avg_15s_pm25 += pm25_samp
+                count = count + 1
+        avg_1m_pm25 /= len(pm25_buffer)
+        avg_15s_pm25 /= count
+        avg_delta = (avg_1m_pm25 - last_avg) / elapsed
 
     buffer = buffer[32:]
 
-    return (pm25_env, avg_pm25, avg_delta, sample_time, "OK")
+    return (pm25_env, avg_1m_pm25, avg_15s_pm25, avg_delta, sample_time, "OK")
 
 if __name__ == '__main__':
     init()
