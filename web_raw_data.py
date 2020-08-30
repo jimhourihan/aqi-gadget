@@ -95,10 +95,15 @@ class RawDataServer (object):
         return self.show_aqi(aqi_util.AQandU_correction)
 
     @cherrypy.expose
-    def shutdown (self, key="blah"):
+    def web_shutdown (self, key="blah"):
         if key == "blah":
             print("INFO: shutting down raw web server")
             cherrypy.engine.exit()
+
+    @cherrypy.expose
+    def display (self):
+        self.ask_queue.put("TOGGLE_DISPLAY")
+        return "TOGGLE_DISPLAY"
 
 def get_host_info ():
     cmd  = 'hostname ; hostname -I'
@@ -118,9 +123,9 @@ def start (ask_queue, data_queue, host=None, port=None):
             'server.socket_port' : port,
         }
     }
-    print("config =", str(config))
+    print("INFO: web server starting: ", str(config))
     cherrypy.quickstart(RawDataServer(ask_queue, data_queue), '/', config)
-    print("INFO: raw web server finished")
+    print("INFO: web server finished")
 
 if __name__ == '__main__':
     start(None, None)

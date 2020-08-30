@@ -19,6 +19,7 @@ def signal_handler (sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 def pm25_loop (out_queue, control_queue):
+    print("INFO: sensor loop started")
     import pm25_service
     pm25_service.init(emulate=False)
     while control_queue.empty():
@@ -31,46 +32,60 @@ def pm25_loop (out_queue, control_queue):
     print("INFO: shutting down sensor")
 
 def display_loop (output_queue):
+    print("INFO: display loop started")
     import tft_display
     stop = False
     tft_display.set_backlight(True)
+    backlight_time = time.time()
+    backlight = True
     while not stop:
         packet = None
+        t = time.time()
+        item = output_queue.get() ## blocks
         while not output_queue.empty():
-            item = output_queue.get() ## blocks
-            if isinstance(item, tuple):
-                packet = item
-            elif isinstance(item, str):
-                if item == "STOP":
-                    print("INFO: shutting down display")
-                    stop = True
-                    break
-            elif isinstance(item, int):
-                light = tft_display.backlight_state()
-                if light:
-                    if item == 2:
-                        tft_display.set_backlight(False)
-                else:
-                    if item > 0:
-                        tft_display.set_backlight(True)
+            item = output_queue.get()
+
+        if backlight and (t - backlight_time) > 15.0:
+            tft_display.set_backlight(False)
+            backlight = False
+            
+        if isinstance(item, tuple):
+            packet = item
+        elif isinstance(item, int):
+            light = tft_display.backlight_state()
+            if light:
+                if item == 2 or item == 16:
+                    tft_display.set_backlight(False)
+                    backlight = False
             else:
-                pass
+                if item > 0:
+                    tft_display.set_backlight(True)
+                    backlight_time = t
+                    backlight = True
+        elif isinstance(item, str):
+            if item == "STOP":
+                stop = True
+                break
+        else:
+            pass
                 
         if packet == None or tft_display.backlight_state() == False:
-            time.sleep(0.3)
+            pass
         else:
             tft_display.draw_packet(packet, scale="AQI")
 
-    tft_display.draw_clear()
+    #tft_display.draw_clear()
     tft_display.set_backlight(False)
+    print("INFO: shutting down display")
 
 def event_loop (control_queue, event_queue):
+    print("INFO: event loop started")
     import tft_buttons
     while control_queue.empty():
         s = tft_buttons.event()
         if s:
             event_queue.put(s)
-        time.sleep(.1)
+        time.sleep(.2)
     print("INFO: shutting down event loop")
 
 def run ():
@@ -118,7 +133,10 @@ def run ():
 
         if not web_ask_queue.empty() and packet != None:
             while not web_ask_queue.empty():
-                web_ask_queue.get()
+                a = web_ask_queue.get()
+                if isinstance(a, str):
+                    if a == "TOGGLE_DISPLAY":
+                        disp_output_queue.put(16)
             web_data_queue.put(packet)
 
     # SHUTDOWN
@@ -127,7 +145,7 @@ def run ():
     disp_output_queue.put("STOP")
     pm25_control_queue.put("STOP")
     try:
-        with urllib.request.urlopen('http://{0}:8081/shutdown'.format(ipaddress)) as response:
+        with urllib.request.urlopen('http://{0}:8081/web_shutdown'.format(ipaddress)) as response:
             html = response.read()
     except:
         print("EXCEPTION")
