@@ -34,10 +34,17 @@ def pm25_loop (out_queue, control_queue):
 def display_loop (output_queue):
     print("INFO: display loop started")
     import tft_display
-    stop = False
-    tft_display.set_backlight(True)
+    modes          = ["AQI", "LRAPA", "AQandU", "HOST", "IP"]
+    mode_index     = 0
+    stop           = False
     backlight_time = time.time()
-    backlight = True
+    backlight      = True
+    last_packet    = None
+
+    tft_display.set_mode(modes[mode_index])
+    tft_display.set_backlight(True)
+    tft_display.draw_clear()
+
     while not stop:
         packet = None
         t = time.time()
@@ -47,6 +54,7 @@ def display_loop (output_queue):
 
         if backlight and (t - backlight_time) > 15.0:
             tft_display.set_backlight(False)
+            tft_display.draw_clear()
             backlight = False
             
         if isinstance(item, tuple):
@@ -54,7 +62,12 @@ def display_loop (output_queue):
         elif isinstance(item, int):
             light = tft_display.backlight_state()
             if light:
-                if item == 2 or item == 16:
+                if item == 1:
+                    mode_index = (mode_index + 1) % len(modes)
+                    tft_display.set_mode(modes[mode_index])
+                    backlight_time = t                          # reset backlight timer
+                    packet = last_packet                        # immediately update
+                elif item == 2 or item == 16:
                     tft_display.set_backlight(False)
                     backlight = False
             else:
@@ -72,9 +85,9 @@ def display_loop (output_queue):
         if packet == None or tft_display.backlight_state() == False:
             pass
         else:
-            tft_display.draw_packet(packet, scale="AQI")
+            tft_display.draw_packet(packet)
+            last_packet = packet
 
-    #tft_display.draw_clear()
     tft_display.set_backlight(False)
     print("INFO: shutting down display")
 

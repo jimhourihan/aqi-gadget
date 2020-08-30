@@ -2,6 +2,7 @@ import digitalio
 import board
 from adafruit_rgb_display.rgb import color565
 import adafruit_rgb_display.st7789 as st7789
+import subprocess
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
@@ -26,14 +27,25 @@ display = st7789.ST7789( board.SPI(),
 
 backlight = digitalio.DigitalInOut(board.D22)
 backlight.switch_to_output()
-backlight.value = True
 
-bfont  = ImageFont.truetype('/home/pi/fonts/Roboto-Bold.ttf', 90)
-tfont  = ImageFont.truetype('/home/pi/fonts/Roboto-Bold.ttf', 24)
-width  = display.height # rotated
-height = display.width
-image  = Image.new('RGB', (width, height))
-draw   = ImageDraw.Draw(image)
+mode        = "AQI"
+bfont       = ImageFont.truetype('/home/pi/fonts/Roboto-Bold.ttf', 90)
+tfont       = ImageFont.truetype('/home/pi/fonts/Roboto-Bold.ttf', 24)
+mfont       = None
+width       = display.height # rotated
+height      = display.width
+image       = Image.new('RGB', (width, height))
+draw        = ImageDraw.Draw(image)
+blank_image = Image.new('RGB', (width, height))
+
+def init_blank ():
+    blank_draw  = ImageDraw.Draw(blank_image)
+    blank_draw.rectangle([(0, 0), (width, height)], fill=(0, 0, 0))
+    s = blank_draw.textsize("AQI", font=bfont)
+    (sx, sy) = ((width - s[0]) / 2.0 - 10, (height - s[1]) / 2.0 - 20)
+    blank_draw.text( (sx, sy), "AQI", font=bfont, fill=(180, 180, 180))
+    display.image(blank_image, 90)
+    backlight.value = True
 
 def set_backlight (b):
     backlight.value = b
@@ -72,25 +84,60 @@ def draw_aqi (aqi, rgb, level, scale_name, delta):
 
     display.image(image, 90)
 
-def draw_clear ():
+def draw_message (title, msg):
+    global mfont
+    if mfont == None:
+        mfont = ImageFont.truetype('/home/pi/fonts/Roboto-Bold.ttf', 30)
     draw.rectangle([(0, 0), (width, height)], fill=(0, 0, 0))
-    s = draw.textsize("OFF", font=bfont)
-    (sx, sy) = ((width - s[0]) / 2.0 - 10, (height - s[1]) / 2.0 - 20)
-    draw.text( (sx, sy), "OFF", font=bfont, fill=(100, 100, 100))
+    ms = draw.textsize(msg, font=mfont)
+    ts = draw.textsize(title, font=tfont)
+    (mx, my) = ((width - ms[0]) / 2.0, (height - ms[1]) / 2.0)
+    (tx, ty) = ((width - ts[0]) / 2.0, my - ts[1] - 6)
+    draw.text( (mx, my), msg, font=mfont, fill=(255, 255, 255) )
+    draw.text( (tx, ty), title, font=tfont, fill=(150, 150, 150) )
     display.image(image, 90)
 
-def draw_packet (packet, scale="AQI"):
-    ugm3 = packet[0]
-    if scale == "LRAPA":
-        ugm3 = aqi_util.LRAPA_correction(ugm3)
-    elif scale == "AQandU":
-        ugm3 = aqi_util.AQandU_correction(ugm3)
-    raqi = aqi_util.aqi_from_concentration(packet[0])
-    delta = packet[2]
-    draw_aqi(raqi[0], raqi[2], raqi[1], scale, delta)
+def draw_clear ():
+    display.image(blank_image, 90)
+
+def set_mode (m):
+    global mode
+    mode = m
+
+hostinfo = None
+
+def get_host_info ():
+    global hostinfo
+    if hostinfo == None:
+        cmd  = 'hostname ; hostname -I'
+        lines = subprocess.check_output(cmd, shell=True).decode('utf-8').splitlines()
+        hostinfo = (lines[0].strip(), lines[1].strip())
+    return hostinfo
+
+def draw_packet (packet):
+    global mode
+    converter = None
+    if mode == "AQI":
+        converter = lambda x: x
+    elif mode == "LRAPA":
+        converter = aqi_util.LRAPA_correction
+    elif mode == "AQandU":
+        converter = aqi_util.AQandU_correction
+
+    if converter:
+        raqi = aqi_util.aqi_from_concentration(converter(packet[0]))
+        delta = packet[2]
+        draw_aqi(raqi[0], raqi[2], raqi[1], mode, delta)
+    elif mode == "IP":
+        draw_message("IP Address", get_host_info()[1])
+    elif mode == "HOST":
+        draw_message("Hostname", get_host_info()[0])
+    else:
+        draw_clear()
 
 if __name__ == '__main__':
     draw_aqi(163, (1.0, 0.0, 0.0))
 
-draw_clear()
+init_blank()
+
 
