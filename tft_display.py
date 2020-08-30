@@ -14,37 +14,32 @@ dc_pin = digitalio.DigitalInOut(board.D25)
 reset_pin = None
 BAUDRATE = 64000000  # The pi can be very fast!
 # Create the ST7789 display:
-display = st7789.ST7789(
-    board.SPI(),
-    cs=cs_pin,
-    dc=dc_pin,
-    rst=reset_pin,
-    baudrate=BAUDRATE,
-    width=135,
-    height=240,
-    x_offset=53,
-    y_offset=40,
-)
+display = st7789.ST7789( board.SPI(),
+                         cs=cs_pin,
+                         dc=dc_pin,
+                         rst=reset_pin,
+                         baudrate=BAUDRATE,
+                         width=135,
+                         height=240,
+                         x_offset=53,
+                         y_offset=40)
 
-backlight       = digitalio.DigitalInOut(board.D22)
-buttonA         = digitalio.DigitalInOut(board.D23)
-buttonB         = digitalio.DigitalInOut(board.D24)
-
+backlight = digitalio.DigitalInOut(board.D22)
 backlight.switch_to_output()
-buttonA.switch_to_input()
-buttonB.switch_to_input()
-
 backlight.value = True
 
-#display.fill(color565(0, 255, 0))  # red
-
-#font   = ImageFont.load_default()
 bfont  = ImageFont.truetype('/home/pi/fonts/Roboto-Bold.ttf', 90)
 tfont  = ImageFont.truetype('/home/pi/fonts/Roboto-Bold.ttf', 24)
 width  = display.height # rotated
 height = display.width
 image  = Image.new('RGB', (width, height))
 draw   = ImageDraw.Draw(image)
+
+def set_backlight (b):
+    backlight.value = b
+
+def backlight_state ():
+    return backlight.value
 
 def draw_aqi (aqi, rgb, level, scale_name, delta):
     aqi_fg = (0, 0, 0)
