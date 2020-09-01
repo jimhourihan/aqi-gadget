@@ -49,6 +49,8 @@ Once you have the Zero W on your local WIFI you can see the AQI via a built
 in webserver thanks to CherryPy. The server runs on port 8081 unless its
 run as root in which case it runs on port 80.
 
+![Huge web socket driven SPA served up by Pi Zero](aqi-web.jpg)
+
 ## Buttons
 
 There are two buttons on the mini-TFT display. They do the following:
