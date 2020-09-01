@@ -1,0 +1,20 @@
+[Unit]
+Description=Air Quality Gadget
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/python3 /home/pi/git/aqi-bomb/main.py
+
+# Our service will notify systemd once it is up and running
+Type=notify
+
+# Disable Python's buffering of STDOUT and STDERR, so that output from the
+# service shows up immediately in systemd's logs
+Environment=PYTHONUNBUFFERED=1
+
+# Automatically restart the service if it crashes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

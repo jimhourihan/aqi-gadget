@@ -115,7 +115,7 @@ class RawDataServer (object):
     @cherrypy.expose
     def web_shutdown (self, key="blah"):
         if key == "blah":
-            print("INFO: shutting down raw web server")
+            print("INFO: [aqi] shutting down raw web server")
             cherrypy.engine.exit()
 
     @cherrypy.expose
@@ -141,9 +141,9 @@ def start (ask_queue, data_queue, host=None, port=None):
             'server.socket_port' : port,
         }
     }
-    print("INFO: web server starting: ", str(config))
+    print("INFO: [aqi] web server starting: ", str(config))
     cherrypy.quickstart(RawDataServer(ask_queue, data_queue), '/', config)
-    print("INFO: web server finished")
+    print("INFO: [aqi] web server finished")
 
 if __name__ == '__main__':
     start(None, None)

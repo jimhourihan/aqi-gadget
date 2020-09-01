@@ -48,6 +48,15 @@ def init_blank ():
     display.image(blank_image, 90)
     backlight.value = True
 
+def draw_off ():
+    blank_draw  = ImageDraw.Draw(blank_image)
+    blank_draw.rectangle([(0, 0), (width, height)], fill=(0, 0, 0))
+    s = blank_draw.textsize("OFF", font=bfont)
+    (sx, sy) = ((width - s[0]) / 2.0, (height - s[1]) / 2.0)
+    blank_draw.text( (sx, sy), "OFF", font=bfont, fill=(255, 255, 0))
+    display.image(blank_image, 90)
+    backlight.value = True
+
 def set_backlight (b):
     backlight.value = b
 
@@ -113,6 +122,8 @@ def get_host_info ():
         cmd  = 'hostname ; hostname -I'
         lines = subprocess.check_output(cmd, shell=True).decode('utf-8').splitlines()
         hostinfo = (lines[0].strip(), lines[1].strip())
+    if hostinfo[1] == "":
+        hostinfo = (hostinfo[0], "NOT CONNECTED")
     return hostinfo
 
 def get_temperature ():
