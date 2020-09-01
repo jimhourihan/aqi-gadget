@@ -1,4 +1,4 @@
-# AQI gadget
+# Air Quality Index (AQI) Gadget
 Python code for an AQI sensor + display
 
 ![POS AQI Gadget](aqi-gadget.jpg)
@@ -51,6 +51,20 @@ run as root in which case it runs on port 80.
 
 ![Huge web socket driven SPA served up by Pi Zero](aqi-web.jpg)
 
+The URLs are:
+
+    http://IPADDRESS/       :: AQI from direct sensor µg/m^3 output.
+    http://IPADDRESS/aqi    :: Same as above
+    http://IPADDRESS/lrapa  :: AQI from LRAPA corrected µg/m^3 output
+    http://IPADDRESS/aqandu :: AQI from AQandU corrected µg/m^3 output
+
+For any of the above you can add ?refresh=N where N is in seconds to get an
+auto updating version of that page.
+
+Also:
+
+    http://IPADDRESS/raw    :: Returns a python tuple of data
+
 ## Buttons
 
 There are two buttons on the mini-TFT display. They do the following:
@@ -68,6 +82,6 @@ into a service on Raspbian (or PiOS?) Buster.
 
  * Move away from Ted Kaczynski aesthetic.
  * Cache rendered images to reduce amount of CPU usage.
- * Handle bad sensor I/O in a smart way
- * Graph display of last hour (web too)
- * Clean up all the global state
+ * Handle bad sensor I/O in a smart way.
+ * Graph display of last hour or so (web too).
+ * Clean up all the global state.
