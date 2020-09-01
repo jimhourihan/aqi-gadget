@@ -64,4 +64,8 @@ into a service on Raspbian (or PiOS?) Buster.
 
 ## Improvements
 
- * Move away from Ted Kaczynski aesthetic
+ * Move away from Ted Kaczynski aesthetic.
+ * Cache rendered images to reduce amount of CPU usage.
+ * Handle bad sensor I/O in a smart way
+ * Graph display of last hour (web too)
+ * Clean up all the global state
