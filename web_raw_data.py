@@ -4,6 +4,7 @@ from multiprocessing import Queue
 from string import Template
 import aqi_util
 from datetime import datetime
+from cherrypy.process.plugins import BackgroundTask
 
 html = Template("""
 <style>
@@ -56,17 +57,16 @@ class RawDataServer (object):
     def __init__ (self, ask_queue, data_queue):
         self.ask_queue = ask_queue
         self.data_queue = data_queue
+        self.value = None
+
+    def read_queue (self):
+        while not self.data_queue.empty():
+            self.value = self.data_queue.get()
 
     @cherrypy.expose
     def raw (self):
-        if self.ask_queue != None:
-            self.ask_queue.put(True)
-            val = self.data_queue.get()
-            while not self.data_queue.empty():
-                val = self.data_queue.get()
-            return str(val)
-        else:
-            return str("None")
+        val = self.value
+        return str(val)
 
     def big_aqi (self, c, refresh=100000):
         aqi = aqi_util.aqi_from_concentration(c)
@@ -87,11 +87,8 @@ class RawDataServer (object):
         return self.aqi()
 
     def show_aqi (self, convert_func, refresh):
-        if self.ask_queue != None:
-            self.ask_queue.put(True)
-            val = self.data_queue.get()
-            while not self.data_queue.empty():
-                val = self.data_queue.get()
+        val = self.value
+        if val:
             return self.big_aqi(convert_func(val[2]), refresh)
         else:
             return html.substitute(AQI="OFF",
@@ -128,6 +125,7 @@ def get_host_info ():
     lines = subprocess.check_output(cmd, shell=True).decode('utf-8').splitlines()
     return (lines[0].strip(), lines[1].strip())
 
+
 def start (ask_queue, data_queue, host=None, port=None):
     cherrypy.log.screen = False
     if host == None:
@@ -143,8 +141,13 @@ def start (ask_queue, data_queue, host=None, port=None):
             'log.error_file'     : '',
         }
     }
+
+    server = RawDataServer(ask_queue, data_queue)
+    task = BackgroundTask(interval = 1, function = server.read_queue, args = [], bus = cherrypy.engine)
+    task.start()
+
     print("INFO: [aqi] web server starting: ", str(config))
-    cherrypy.quickstart(RawDataServer(ask_queue, data_queue), '/', config)
+    cherrypy.quickstart(server, '/', config)
     print("INFO: [aqi] web server finished")
 
 if __name__ == '__main__':

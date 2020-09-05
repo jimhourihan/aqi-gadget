@@ -159,12 +159,7 @@ def run ():
         except:
             pass
 
-        if not web_ask_queue.empty() and packet != None:
-            while not web_ask_queue.empty():
-                a = web_ask_queue.get()
-                if isinstance(a, str):
-                    if a == "TOGGLE_DISPLAY":
-                        disp_output_queue.put(16)
+        if packet != None:
             web_data_queue.put(packet)
 
     # SHUTDOWN

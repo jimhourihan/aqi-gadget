@@ -5,6 +5,34 @@ def LRAPA_correction (c):
 def AQandU_correction (c):
     return c * 0.851 - 1.1644
 
+def rgb_shade_from_aqi (aqi):
+    if aqi< 50:
+        u = aqi / 50.0
+        return (u, 1.0, 0.0)
+    elif aqi < 100:
+        u = (aqi - 50.0) / 50.0
+        return (1.0, 1.0 - u * 0.5, 0.0)
+    elif aqi < 150:
+        u = (aqi - 100) / 50.0
+        return (1.0, 0.5 - u * 0.5, 0.0)
+    elif aqi < 200:
+        u = (aqi - 150) / 50.0
+        return (1.0 - u * 0.5, 0.5 - u * 0.5, 0.0)
+    else:
+        return (0.5, 0, 0.18)
+
+def rgb_from_aqi (aqi):
+    if aqi < 50:
+        return (0, 1.0, 0)
+    if aqi >= 50 and aqi < 100:
+        return (1.0, 1.0, 0)
+    elif aqi >= 100 and aqi < 150:
+        return (1.0, 0.5, 0)
+    elif aqi >= 150 and aqi < 200:
+        return (1.0, 0, 0)
+    else:
+        return (0.5, 0, 0.18)
+
 def aqi_from_concentration (c):
     il = 0.0
     ih = 0.0
@@ -28,18 +56,5 @@ def aqi_from_concentration (c):
         (cl, ch, il, ih, t) = (350.4, 500.0, 401.0, 500.0, "Hazardous2")
 
     aqi = (ih - il) / (ch - cl) * (c - cl) + il
-
-    rgb = (1.0, 1.0, 1.0)
-    
-    if aqi < 50:
-        rgb = (0, 1.0, 0)
-    if aqi >= 50 and aqi < 100:
-        rgb = (1.0, 1.0, 0)
-    elif aqi >= 100 and aqi < 150:
-        rgb = (1.0, 0.5, 0)
-    elif aqi >= 150 and aqi < 200:
-        rgb = (1.0, 0, 0)
-    elif aqi >= 200:
-        rgb = (0.5, 0, 0.18)
-
+    rgb = rgb_from_aqi(aqi)
     return (int(aqi), t, rgb)
