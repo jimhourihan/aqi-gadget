@@ -139,6 +139,8 @@ def start (ask_queue, data_queue, host=None, port=None):
         'global': {
             'server.socket_host' : host,
             'server.socket_port' : port,
+            'log.access_file'    : '',
+            'log.error_file'     : '',
         }
     }
     print("INFO: [aqi] web server starting: ", str(config))
