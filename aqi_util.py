@@ -6,7 +6,7 @@ def AQandU_correction (c):
     return c * 0.851 - 1.1644
 
 def rgb_shade_from_aqi (aqi):
-    if aqi< 50:
+    if aqi < 50:
         u = aqi / 50.0
         return (u, 1.0, 0.0)
     elif aqi < 100:
@@ -24,7 +24,7 @@ def rgb_shade_from_aqi (aqi):
 def rgb_from_aqi (aqi):
     if aqi < 50:
         return (0, 1.0, 0)
-    if aqi >= 50 and aqi < 100:
+    elif aqi >= 50 and aqi < 100:
         return (1.0, 1.0, 0)
     elif aqi >= 100 and aqi < 150:
         return (1.0, 0.5, 0)
