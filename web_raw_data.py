@@ -53,7 +53,7 @@ html = Template("""
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
-  width: 32%;
+  width: 23.5%;
   padding: 1% 0px;
   margin: 0px 0px;
   text-align: center;
@@ -68,7 +68,7 @@ html = Template("""
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
-  width: 32%;
+  width: 23.5%;
   padding: 1% 0px;
   margin: 0px 0px;
   text-align: center;
@@ -83,7 +83,22 @@ html = Template("""
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
-  width: 32%;
+  width: 23.5%;
+  padding: 1% 0px;
+  margin: 0px 0px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 5vw;
+  cursor: pointer;
+}
+
+.conbutton {
+  background-color: $CONCOLOR;
+  border: 1px solid grey;
+  border-radius: 8px;
+  color: black;
+  width: 23.5%;
   padding: 1% 0px;
   margin: 0px 0px;
   text-align: center;
@@ -100,6 +115,8 @@ html = Template("""
     <a href="http://$HOST/aqi" class="aqibutton"><div class="boldfont">$BAQI</div><div class="regularfont">AQI</div></a>
     <a href="http://$HOST/lrapa" class="lrapabutton"><div class="boldfont">$BLRAPA</div><div class="regularfont">LRAPA</div></a>
     <a href="http://$HOST/aqandu" class="aqandubutton"><div class="boldfont">$BAQANDU</div><div class="regularfont">AQandU</div></a>
+    <a href="http://$HOST/concentration" class="conbutton"><div class="boldfont">$BCON</div><div class="regularfont">µg/m<sup>3</sup></div></a>
+
 
     <div class="centered">
         <center> <div class="bignum">$AQI</div> </center>
@@ -136,9 +153,11 @@ class RawDataServer (object):
         b_aqi = aqi_util.aqi_from_concentration(c)[0]
         b_lrapa = aqi_util.aqi_from_concentration(aqi_util.LRAPA_correction(c))[0]
         b_aqandu = aqi_util.aqi_from_concentration(aqi_util.AQandU_correction(c))[0]
+        b_con = c
         b_aqi_rgb = aqi_util.rgb_shade_from_aqi(b_aqi)
         b_lrapa_rgb = aqi_util.rgb_shade_from_aqi(b_lrapa)
         b_aqandu_rgb = aqi_util.rgb_shade_from_aqi(b_aqandu)
+        b_con_rgb = (.7, .7, .7)
         rgb = aqi[2]
         lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
         bg = to_html_color(rgb)
@@ -149,9 +168,11 @@ class RawDataServer (object):
                                BAQI=str(b_aqi),
                                BLRAPA=str(b_lrapa),
                                BAQANDU=str(b_aqandu),
+                               BCON=str(int(b_con)),
                                AQICOLOR=to_html_color(b_aqi_rgb),
                                LRAPACOLOR=to_html_color(b_lrapa_rgb),
                                AQANDUCOLOR=to_html_color(b_aqandu_rgb),
+                               CONCOLOR=to_html_color(b_con_rgb),
                                BG=bg,
                                FG=fg,
                                HOST=h,
@@ -185,6 +206,10 @@ class RawDataServer (object):
     @cherrypy.expose
     def aqandu (self, refresh=100000):
         return self.show_aqi(aqi_util.AQandU_correction, refresh)
+
+    @cherrypy.expose
+    def concentration (self, refresh=100000):
+        return "CONCENTRATION"
 
     @cherrypy.expose
     def web_shutdown (self, key="blah"):
