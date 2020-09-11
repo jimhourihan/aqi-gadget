@@ -18,8 +18,11 @@ def rgb_shade_from_aqi (aqi):
     elif aqi < 200:
         u = (aqi - 150) / 50.0
         return (1.0 - u * 0.5, 0.5 - u * 0.5, 0.0)
+    elif aqi < 300:
+        u = (aqi - 200) / 100.0
+        return (1.0 - u * 0.43, 0.5 - u * 0.5, 0.3 * u)
     else:
-        return (0.5, 0, 0.18)
+        return (0.5, 0, 0.14)
 
 def rgb_from_aqi (aqi):
     if aqi < 50:
@@ -30,8 +33,10 @@ def rgb_from_aqi (aqi):
         return (1.0, 0.5, 0)
     elif aqi >= 150 and aqi < 200:
         return (1.0, 0, 0)
+    elif aqi < 300:
+        return (0.57, 0.0, 0.3)
     else:
-        return (0.5, 0, 0.18)
+        return (0.5, 0, 0.14)
 
 def aqi_from_concentration (c):
     il = 0.0
@@ -45,7 +50,7 @@ def aqi_from_concentration (c):
     elif c <= 35.4:
         (cl, ch, il, ih, t) = (12.1, 35.4, 51.0, 100.0, "Moderate")
     elif c <= 55.4:
-        (cl, ch, il, ih, t) = (35.5, 55.4, 101.0, 150.0, "Unhealthy for Selective Groups")
+        (cl, ch, il, ih, t) = (35.5, 55.4, 101.0, 150.0, "Unhealthy (SG)")
     elif c <= 150.4:
         (cl, ch, il, ih, t) = (55.5, 150.4, 151.0, 200.0, "Unhealthy")
     elif c <= 250.4:
