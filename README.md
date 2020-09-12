@@ -18,14 +18,17 @@ LRAPA and AQandU output.
 
 ## Hardware
 
- * Plantower Sensor: https://www.adafruit.com/product/3686
+ * I2C Plantower Sensor: https://www.adafruit.com/product/4632
  * TFT mini display: https://www.adafruit.com/product/4393
  * Pi Zero W: https://www.adafruit.com/product/3400
+
 
 If you want it to be mobile you can use an android phone charger battery to
 power the Zero or a proper dedicated battery. Check the power requirements.
 
-This version of the PM2.5 sensor uses the UART interface on the GPIO.
+Alternately there is an older UART version which also works:
+
+ * UART Plantower Sensor: https://www.adafruit.com/product/3686
 
 ## Display
 
@@ -80,8 +83,6 @@ into a service on Raspbian (or PiOS?) Buster.
 
 ## Improvements
 
- * Move away from Ted Kaczynski aesthetic.
  * Cache rendered images to reduce amount of CPU usage.
- * Handle bad sensor I/O in a smart way.
  * Graph display of last hour or so (web too).
  * Clean up all the global state.
