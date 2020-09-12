@@ -1,8 +1,11 @@
 #/usr/bin/env python3
-import serial
+#import serial
 import time
 import struct
+import board
 import math
+import busio
+import adafruit_pm25
 
 # red 2
 # black 3
@@ -10,6 +13,8 @@ import math
 
 _emulate         = False
 uart             = None
+i2c              = None
+pm25             = None
 buffer           = []
 last_sample_time = 0.0
 avg_1m_pm25      = 0
@@ -23,9 +28,15 @@ def not_a_result (msg):
 def init (emulate=False):
     global _emulate
     global uart
+    global i2c
+    global pm25
     _emulate = emulate
     if not emulate:
-        uart = serial.Serial("/dev/serial0", baudrate=9600)
+        #uart = serial.Serial("/dev/serial0", baudrate=9600)
+        # Create library object, use 'slow' 100KHz frequency!
+        i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
+        # Connect to a PM2.5 sensor over I2C
+        pm25 = adafruit_pm25.PM25_I2C(i2c, None)
 
 def emulate_read_packet ():
     global last_sample_time
@@ -54,46 +65,25 @@ def read_packet ():
     global pm25_buffer
     global last_sample_time
     global avg_delta
-    data = uart.read(32)  # read up to 32 bytes
-    data = list(data)
-    sample_time = time.time()
 
-    buffer += data
+    elapsed = 0.0
+    while elapsed < 1.0:
+        sample_time = time.time()
+        elapsed = sample_time - last_sample_time
+        if elapsed < 1.0:
+            time.sleep(1.0)
 
-    while buffer and buffer[0] != 0x42:
-        buffer.pop(0)
+    aqdata = None
 
-    if len(buffer) > 200:
-        buffer = []  # avoid an overrun if all bad data
-    if len(buffer) < 32:
-        return not_a_result("len buffer < 32")
+    while not aqdata:
+        try:
+            aqdata = pm25.read()
+        except RuntimeError:
+            pass
+            #return not_a_result("Unable to read from sensor")
 
-    if buffer[1] != 0x4d:
-        buffer.pop(0)
-        return not_a_result("buffer[1] != 0x4d")
+    pm25_env = aqdata["pm25 standard"]
 
-    frame_len = struct.unpack(">H", bytes(buffer[2:4]))[0]
-    if frame_len != 28:
-        buffer = []
-        return not_a_result("frame_len != 28")
-
-    try:
-        frame = struct.unpack(">HHHHHHHHHHHHHH", bytes(buffer[4:]))
-    except:
-        return not_a_result("exception when unpacking")
-
-    pm10_standard, pm25_standard, pm100_standard, pm10_env, \
-        pm25_env, pm100_env, particles_03um, particles_05um, particles_10um, \
-        particles_25um, particles_50um, particles_100um, skip, checksum = frame
-
-    check = sum(buffer[0:30])
-
-    if check != checksum:
-        buffer = []
-        return not_a_result("invalid checksum")
-        
-
-    elapsed = sample_time - last_sample_time
     if elapsed < 2.3:
         # device may repeat data if under this limit
         pass
@@ -124,5 +114,6 @@ def read_packet ():
 if __name__ == '__main__':
     init()
     while True:
+        time.sleep(1)
         p = read_packet()
         print(str(p))
