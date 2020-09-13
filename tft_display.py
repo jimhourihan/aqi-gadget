@@ -1,4 +1,5 @@
 import digitalio
+import sys
 import board
 from adafruit_rgb_display.rgb import color565
 import adafruit_rgb_display.st7789 as st7789
@@ -170,7 +171,7 @@ def draw_packet (packet):
         draw_clear()
 
 if __name__ == '__main__':
-    draw_aqi(163, (1.0, 0.0, 0.0))
+    draw_aqi(163, (1.0, 0.0, 0.0), "Sure", "test", 0.0)
 
 init_blank()
 

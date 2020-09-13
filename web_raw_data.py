@@ -2,14 +2,49 @@ import cherrypy
 import subprocess
 from multiprocessing import Queue
 from string import Template
-import aqi_util
+from aqi_util import *
 from datetime import datetime
 from cherrypy.process.plugins import BackgroundTask
 
 server_ip   = "127.0.0.1"
 server_port = 8081
+server_name = "localhost"
 
-html = Template("""
+envhtml = Template("""
+<style>
+.centered {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translateX(-50%) translateY(-50%);
+}
+.desc {
+    color: $FG;
+    font-size: 14vw;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+}
+.time {
+    color: $FG;
+    font-size: 3.5vw;
+    font-family: Arial, Helvetica, sans-serif;
+}
+</style>
+<meta http-equiv="refresh" content="$REFRESH">
+<body style="background-color: $BG">
+  <html>
+    <div class="centered">
+        <center> <div class="desc">$TEMPF°F</div></center>
+        <center> <div class="desc">$TEMPC°C</div></center>
+<br>
+        <center> <div class="desc">$HUMIDITY%</div> </center>
+        <center> <div class="time">$TIME</div> </center>
+    </div>
+  </html>
+</body>
+""")
+
+aqihtml = Template("""
 <style>
 .centered {
     position: absolute;
@@ -32,6 +67,13 @@ html = Template("""
     font-weight: bold;
 }
 
+.subdesc {
+    color: $FG;
+    font-size: 5vw;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+}
+
 .time {
     color: $FG;
     font-size: 3.5vw;
@@ -48,8 +90,8 @@ html = Template("""
   font-size: 3vw;
 }
 
-.aqibutton {
-  background-color: $AQICOLOR;
+.button0 {
+  background-color: $BGCOLOR0;
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
@@ -63,8 +105,8 @@ html = Template("""
   cursor: pointer;
 }
 
-.lrapabutton {
-  background-color: $LRAPACOLOR;
+.button1 {
+  background-color: $BGCOLOR1;
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
@@ -78,8 +120,8 @@ html = Template("""
   cursor: pointer;
 }
 
-.aqandubutton {
-  background-color: $AQANDUCOLOR;
+.button2 {
+  background-color: $BGCOLOR2;
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
@@ -93,8 +135,8 @@ html = Template("""
   cursor: pointer;
 }
 
-.conbutton {
-  background-color: $CONCOLOR;
+.button3 {
+  background-color: $BGCOLOR3;
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
@@ -112,15 +154,16 @@ html = Template("""
 <meta http-equiv="refresh" content="$REFRESH">
 <body style="background-color: $BG">
   <html>
-    <a href="http://$HOST/aqi" class="aqibutton"><div class="boldfont">$BAQI</div><div class="regularfont">AQI</div></a>
-    <a href="http://$HOST/lrapa" class="lrapabutton"><div class="boldfont">$BLRAPA</div><div class="regularfont">LRAPA</div></a>
-    <a href="http://$HOST/aqandu" class="aqandubutton"><div class="boldfont">$BAQANDU</div><div class="regularfont">AQandU</div></a>
-    <a href="http://$HOST/concentration" class="conbutton"><div class="boldfont">$BCON</div><div class="regularfont">µg/m<sup>3</sup></div></a>
+    <a href="http://$HOST/$TARGET0?refresh=$REFRESH" class="button0"><div class="boldfont">$VALUE0</div><div class="regularfont">$LABEL0</div></a>
+    <a href="http://$HOST/$TARGET1?refresh=$REFRESH" class="button1"><div class="boldfont">$VALUE1</div><div class="regularfont">$LABEL1</div></a>
+    <a href="http://$HOST/$TARGET2?refresh=$REFRESH" class="button2"><div class="boldfont">$VALUE2</div><div class="regularfont">$LABEL2</div></a>
+    <a href="http://$HOST/$TARGET3?refresh=$REFRESH" class="button3"><div class="boldfont">$VALUE3</div><div class="regularfont">$LABEL3</div></a>
 
 
     <div class="centered">
-        <center> <div class="bignum">$AQI</div> </center>
+        <center> <div class="bignum">$MAINVALUE</div> </center>
         <center> <div class="desc">$DESC</div> </center>
+        <center> <div class="subdesc">$MAINLABEL | $MACHINE</div> </center>
         <center> <div class="time">$TIME</div> </center>
     </div>
   </html>
@@ -137,85 +180,141 @@ class RawDataServer (object):
     def __init__ (self, ask_queue, data_queue):
         self.ask_queue = ask_queue
         self.data_queue = data_queue
-        self.value = None
+        self.pm_value = None
+        self.env_value = {"F" : 70.5, "C" : 21.4, "H" : 60.6}
 
     def read_queue (self):
         while not self.data_queue.empty():
-            self.value = self.data_queue.get()
+            v = self.data_queue.get()
+            if isinstance(v, str):
+                if v == "STOP":
+                    print("INFO: [aqi] shutting down web server")
+                    cherrypy.engine.exit()
+            if isinstance(v, dict):
+                self.env_value = v
+            else:
+                self.pm_value = v
 
     @cherrypy.expose
     def raw (self):
-        val = self.value
+        val = self.pm_value
         return str(val)
 
-    def big_aqi (self, convert_func, c, refresh=100000):
-        aqi = aqi_util.aqi_from_concentration(convert_func(c))
-        b_aqi = aqi_util.aqi_from_concentration(c)[0]
-        b_lrapa = aqi_util.aqi_from_concentration(aqi_util.LRAPA_correction(c))[0]
-        b_aqandu = aqi_util.aqi_from_concentration(aqi_util.AQandU_correction(c))[0]
-        b_con = c
-        b_aqi_rgb = aqi_util.rgb_shade_from_aqi(b_aqi)
-        b_lrapa_rgb = aqi_util.rgb_shade_from_aqi(b_lrapa)
-        b_aqandu_rgb = aqi_util.rgb_shade_from_aqi(b_aqandu)
-        b_con_rgb = (.7, .7, .7)
-        rgb = aqi[2]
-        lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
-        bg = to_html_color(rgb)
-        fg = to_html_color( (0, 0, 0) if lum > .25 else (.8, .8, .8) )
+    @cherrypy.expose
+    def env (self):
         now = datetime.now()
-        h = server_ip + ":" + str(server_port)
-        return html.substitute(AQI=str(aqi[0]),
-                               BAQI=str(b_aqi),
-                               BLRAPA=str(b_lrapa),
-                               BAQANDU=str(b_aqandu),
-                               BCON=str(int(b_con)),
-                               AQICOLOR=to_html_color(b_aqi_rgb),
-                               LRAPACOLOR=to_html_color(b_lrapa_rgb),
-                               AQANDUCOLOR=to_html_color(b_aqandu_rgb),
-                               CONCOLOR=to_html_color(b_con_rgb),
-                               BG=bg,
-                               FG=fg,
-                               HOST=h,
-                               DESC=aqi[1],
-                               TIME=now.ctime(),
-                               REFRESH=str(refresh))
+
+        F = str(self.env_value["F"])
+        C = str(self.env_value["C"])
+        H = str(self.env_value["H"])
+
+        keys = {
+            "FG" : "black",
+            "BG" : "#aaaaaa",
+            "TEMPF" : F,
+            "TEMPC" : C,
+            "HUMIDITY" : H,
+            "TIME" : now.ctime(),
+            "REFRESH" : "10",
+        }
+        return envhtml.substitute(keys)
+
+    def big_aqi (self, other_keys):
+
+        c          = self.pm_value[2]
+        h          = self.env_value["H"]
+        aqi        = aqi_from_concentration(EPA_correction(c, h))
+        b_aqi      = aqi_from_concentration(c)[0]
+        b_temp     = self.env_value["F"]
+        b_hum      = h
+        b_con      = c
+        b_aqi_rgb  = rgb_shade_from_aqi(b_aqi)
+        b_temp_rgb = (1, .8, .8)
+        b_hum_rgb  = (.8, .8, 1.0)
+        b_con_rgb  = (.85, .85, .85)
+        rgb        = aqi[2]
+        lum        = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
+        bg         = to_html_color(rgb)
+        fg         = to_html_color( (0, 0, 0) if lum > .25 else (.8, .8, .8) )
+        now        = datetime.now()
+        port       = server_ip + ":" + str(server_port)
+        machine    = server_name
+
+        keys = {
+            "MAINVALUE" : aqi[0],
+            "MAINLABEL" : "Native AQI",
+            "VALUE0" : aqi_from_concentration(EPA_correction(c, self.env_value["H"])),
+            "VALUE1" : "{:.0f}".format(b_con),
+            "VALUE2" : "{:.1f}°".format(b_temp),
+            "VALUE3" : "{:.0f}%".format(b_hum),
+            "LABEL0" : "Native",
+            "LABEL1" : "µg/m<sup>3</sup>",
+            "LABEL2" : "Temp. F",
+            "LABEL3" : "Humidity",
+            "TARGET0" : "native",
+            "TARGET1" : "concentration",
+            "TARGET2" : "env",
+            "TARGET3" : "env",
+            "BGCOLOR0" : to_html_color(b_aqi_rgb),
+            "BGCOLOR1" : to_html_color(b_con_rgb),
+            "BGCOLOR2" : to_html_color(b_temp_rgb),
+            "BGCOLOR3" : to_html_color(b_hum_rgb),
+            "BG" : bg,
+            "FG" : fg,
+            "HOST" : port,
+            "MACHINE" : machine,
+            "DESC" : aqi[1],
+            "TIME" : now.ctime(),
+            "REFRESH" : str(10000),
+        }
+
+        return aqihtml.substitute({**keys, **other_keys})
 
     @cherrypy.expose
     def index (self):
-        return self.aqi()
-
-    def show_aqi (self, convert_func, refresh):
-        val = self.value
-        if val:
-            return self.big_aqi(convert_func, val[2], refresh)
-        else:
-            return html.substitute(AQI="OFF",
-                                   REFRESH="10000",
-                                   BG="black",
-                                   FG="white",
-                                   DESC="")
+        return self.aqi(refresh=10)
 
     @cherrypy.expose
     def aqi (self, refresh=100000):
-        return self.show_aqi(lambda x: x, refresh)
+        return self.epa(refresh)
 
     @cherrypy.expose
-    def lrapa (self, refresh=100000):
-        return self.show_aqi(aqi_util.LRAPA_correction, refresh)
+    def epa (self, refresh=100000):
+        c = self.pm_value[2]
+        h = self.env_value["H"]
+        aqi = aqi_from_concentration(EPA_correction(c, h))
+        native = aqi_from_concentration(c)
+        keys = {
+            "MAINVALUE" : str(aqi[0]),
+            "MAINLABEL" : "EPA AQI",
+            "DESC" : aqi[1],
+            "REFRESH" : refresh,
+            "VALUE0" : str(native[0]),
+            "LABEL0" : "Native AQI",
+            "TARGET0" : "native",
+            "VALUE1" : int(EPA_correction(c, h)),
+            "BGCOLOR0" : to_html_color(native[2]),
+        }
+        return self.big_aqi(keys)
 
     @cherrypy.expose
-    def aqandu (self, refresh=100000):
-        return self.show_aqi(aqi_util.AQandU_correction, refresh)
-
-    @cherrypy.expose
-    def concentration (self, refresh=100000):
-        return "CONCENTRATION"
-
-    @cherrypy.expose
-    def web_shutdown (self, key="blah"):
-        if key == "blah":
-            print("INFO: [aqi] shutting down raw web server")
-            cherrypy.engine.exit()
+    def native (self, refresh=100000):
+        c = self.pm_value[2]
+        h = self.env_value["H"]
+        aqi = aqi_from_concentration(EPA_correction(c, h))
+        native = aqi_from_concentration(c)
+        keys = {
+            "MAINVALUE" : str(native[0]),
+            "MAINLABEL" : "Native AQI",
+            "DESC" : native[1],
+            "REFRESH" : refresh,
+            "VALUE0" : str(aqi[0]),
+            "LABEL0" : "EPA AQI",
+            "TARGET0" : "epa",
+            "VALUE1" : int(c),
+            "BGCOLOR0" : to_html_color(aqi[2]),
+        }
+        return self.big_aqi(keys)
 
     @cherrypy.expose
     def display (self):
@@ -228,17 +327,21 @@ def get_host_info ():
     return (lines[0].strip(), lines[1].strip())
 
 
-def start (ask_queue, data_queue, host=None, port=None):
+def start (ask_queue, data_queue, host=None, port=None, name=None):
     global server_ip
     global server_port
+    global server_name
+    (machine, ipaddress) = get_host_info()
     cherrypy.log.screen = False
     if host == None:
-        (machine, ipaddress) = get_host_info()
         host = ipaddress
     if port == None:
-        port = 8081
+        port = 8080
+    if name == None:
+        name = "localhost"
     server_ip = host
     server_port = port
+    server_name = name
     config = {
         'global': {
             'server.socket_host' : server_ip,
@@ -252,7 +355,7 @@ def start (ask_queue, data_queue, host=None, port=None):
     task = BackgroundTask(interval = 1, function = server.read_queue, args = [], bus = cherrypy.engine)
     task.start()
 
-    print("INFO: [aqi] web server starting: ", str(config))
+    print("INFO: [aqi] web server starting: {}:{}".format(server_ip, server_port))
     cherrypy.quickstart(server, '/', config)
     print("INFO: [aqi] web server finished")
 

@@ -1,9 +1,15 @@
 
 def LRAPA_correction (c):
-    return c / 2.0 - 0.66
+    cc = c / 2.0 - 0.66
+    return cc if cc > 0.0 else 0.0
 
 def AQandU_correction (c):
-    return c * 0.851 - 1.1644
+    cc = c * 0.851 - 1.1644
+    return cc if cc > 0.0 else 0.0
+
+def EPA_correction (c, rh):
+    cc = 0.534 * c - 0.0844 * (rh / 100.0) + 5.604
+    return cc if cc > 0.0 else 0.0
 
 def rgb_shade_from_aqi (aqi):
     if aqi < 50:

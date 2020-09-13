@@ -11,6 +11,7 @@ import adafruit_pm25
 # black 3
 # yellow 5
 
+use_i2c          = False
 _emulate         = False
 uart             = None
 i2c              = None
@@ -32,11 +33,14 @@ def init (emulate=False):
     global pm25
     _emulate = emulate
     if not emulate:
-        #uart = serial.Serial("/dev/serial0", baudrate=9600)
-        # Create library object, use 'slow' 100KHz frequency!
-        i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
-        # Connect to a PM2.5 sensor over I2C
-        pm25 = adafruit_pm25.PM25_I2C(i2c, None)
+        if use_i2c:
+            i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
+            pm25 = adafruit_pm25.PM25_I2C(i2c, None)
+        else:
+            import serial
+            uart = serial.Serial("/dev/ttyS0", baudrate=9600, timeout=0.25)
+            pm25 = adafruit_pm25.PM25_UART(uart, None)
+            
 
 def emulate_read_packet ():
     global last_sample_time
