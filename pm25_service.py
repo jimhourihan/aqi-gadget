@@ -11,7 +11,6 @@ import adafruit_pm25
 # black 3
 # yellow 5
 
-use_i2c          = False
 _emulate         = False
 uart             = None
 i2c              = None
@@ -26,7 +25,7 @@ pm25_buffer      = []
 def not_a_result (msg):
     return (0, 0, 0, msg)
 
-def init (emulate=False):
+def init (emulate=False, use_i2c=True):
     global _emulate
     global uart
     global i2c

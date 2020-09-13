@@ -190,7 +190,7 @@ class RawDataServer (object):
                 if v == "STOP":
                     print("INFO: [aqi] shutting down web server")
                     cherrypy.engine.exit()
-            if isinstance(v, dict):
+            elif isinstance(v, dict):
                 self.env_value = v
             else:
                 self.pm_value = v

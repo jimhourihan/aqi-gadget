@@ -10,8 +10,8 @@ import urllib.request
 import systemd.daemon
 
 stop_flag      = False
-use_display    = False
-use_env_sensor = True
+use_display    = True
+use_env_sensor = False
 
 def signal_handler (sig, frame):
     global stop_flag
@@ -44,7 +44,7 @@ def env_loop (out_queue, control_queue):
 def pm25_loop (out_queue, control_queue):
     print("INFO: [aqi] pm sensor loop started")
     import pm25_service
-    pm25_service.init(emulate=False)
+    pm25_service.init(emulate=False, use_i2c=True)
     while control_queue.empty():
         #(pm25, avg_pm25, sample_time, desc) = pm25_service.read_packet()
         p = pm25_service.read_packet()
@@ -207,7 +207,7 @@ def run ():
             env_packet = env_queue.get()
 
         try:
-            if use_display:
+            if use_display and pm_packet:
                 disp_output_queue.put(pm_packet, block=False)
         except:
             pass
