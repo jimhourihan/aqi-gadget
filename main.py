@@ -1,3 +1,4 @@
+import aqi_gadget_config
 import subprocess
 import time
 import signal
@@ -10,8 +11,8 @@ import urllib.request
 import systemd.daemon
 
 stop_flag      = False
-use_display    = True
-use_env_sensor = False
+use_display    = aqi_gadget_config.use_mini_tft
+use_env_sensor = aqi_gadget_config.use_dht_sensor
 
 def signal_handler (sig, frame):
     global stop_flag
@@ -44,7 +45,7 @@ def env_loop (out_queue, control_queue):
 def pm25_loop (out_queue, control_queue):
     print("INFO: [aqi] pm sensor loop started")
     import pm25_service
-    pm25_service.init(emulate=False, use_i2c=True)
+    pm25_service.init(emulate=False, use_i2c=aqi_gadget_config.use_pm25_i2c)
     while control_queue.empty():
         #(pm25, avg_pm25, sample_time, desc) = pm25_service.read_packet()
         p = pm25_service.read_packet()
