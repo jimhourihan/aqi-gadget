@@ -201,12 +201,11 @@ class RawDataServer (object):
         return str(val)
 
     @cherrypy.expose
-    def env (self):
+    def env (self, refresh=10000):
         now = datetime.now()
-
-        F = str(self.env_value["F"])
-        C = str(self.env_value["C"])
-        H = str(self.env_value["H"])
+        F = "{:.1f}".format(self.env_value["F"])
+        C = "{:.1f}".format(self.env_value["C"])
+        H = "{:.1f}".format(self.env_value["H"])
 
         keys = {
             "FG" : "black",
@@ -215,7 +214,7 @@ class RawDataServer (object):
             "TEMPC" : C,
             "HUMIDITY" : H,
             "TIME" : now.ctime(),
-            "REFRESH" : "10",
+            "REFRESH" : str(refresh),
         }
         return envhtml.substitute(keys)
 
@@ -282,37 +281,47 @@ class RawDataServer (object):
     def epa (self, refresh=100000):
         c = self.pm_value[2]
         h = self.env_value["H"]
-        aqi = aqi_from_concentration(EPA_correction(c, h))
+        epa = aqi_from_concentration(EPA_correction(c, h))
         native = aqi_from_concentration(c)
+        rgb = epa[2]
+        lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
+        bg = to_html_color(rgb)
+        fg = to_html_color( (0, 0, 0) if lum > .25 else (.8, .8, .8) )
         keys = {
-            "MAINVALUE" : str(aqi[0]),
+            "MAINVALUE" : str(epa[0]),
             "MAINLABEL" : "EPA AQI",
-            "DESC" : aqi[1],
+            "DESC" : epa[1],
             "REFRESH" : refresh,
             "VALUE0" : str(native[0]),
             "LABEL0" : "Native AQI",
             "TARGET0" : "native",
-            "VALUE1" : int(EPA_correction(c, h)),
             "BGCOLOR0" : to_html_color(native[2]),
+            "VALUE1" : int(EPA_correction(c, h)),
         }
         return self.big_aqi(keys)
 
     @cherrypy.expose
     def native (self, refresh=100000):
-        c = self.pm_value[2]
+        c = self.pm_value[0]
         h = self.env_value["H"]
-        aqi = aqi_from_concentration(EPA_correction(c, h))
+        epa = aqi_from_concentration(EPA_correction(c, h))
         native = aqi_from_concentration(c)
+        rgb = native[2]
+        lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
+        bg = to_html_color(rgb)
+        fg = to_html_color( (0, 0, 0) if lum > .25 else (.8, .8, .8) )
         keys = {
             "MAINVALUE" : str(native[0]),
             "MAINLABEL" : "Native AQI",
+            "BG" : bg,
+            "FG" : fg,
             "DESC" : native[1],
             "REFRESH" : refresh,
-            "VALUE0" : str(aqi[0]),
+            "VALUE0" : str(epa[0]),
             "LABEL0" : "EPA AQI",
             "TARGET0" : "epa",
+            "BGCOLOR0" : to_html_color(epa[2]),
             "VALUE1" : int(c),
-            "BGCOLOR0" : to_html_color(aqi[2]),
         }
         return self.big_aqi(keys)
 
