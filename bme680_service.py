@@ -1,6 +1,7 @@
 import board
 import busio
 import adafruit_bme680
+import aqi_gadget_config
 
 i2c = None
 sensor = None
@@ -12,7 +13,7 @@ def init ():
     sensor = adafruit_bme680.Adafruit_BME680_I2C(i2c)
 
 def read_packet ():
-    tempC = sensor.temperature
+    tempC = sensor.temperature - aqi_gadget_config.temp_offset_celsius
     gas = sensor.gas
     h = sensor.humidity
     mbars = sensor.pressure
