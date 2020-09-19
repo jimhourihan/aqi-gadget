@@ -148,11 +148,9 @@ def draw_packet (packet):
     global mode
     converter = None
     if mode == "AQI":
+        converter = lambda x: aqi_util.EPA_correction(x, 60.0)
+    elif mode == "NativeAQI":
         converter = lambda x: x
-    elif mode == "LRAPA":
-        converter = aqi_util.LRAPA_correction
-    elif mode == "AQandU":
-        converter = aqi_util.AQandU_correction
 
     if converter:
         raqi = aqi_util.aqi_from_concentration(converter(packet[2]))

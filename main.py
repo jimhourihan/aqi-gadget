@@ -12,7 +12,7 @@ import systemd.daemon
 
 stop_flag      = False
 use_display    = aqi_gadget_config.use_mini_tft
-use_env_sensor = aqi_gadget_config.use_dht_sensor
+use_env_sensor = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme680_sensor
 
 def signal_handler (sig, frame):
     global stop_flag
@@ -24,8 +24,7 @@ def signal_handler (sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
-def env_loop (out_queue, control_queue):
-    print("INFO: [aqi] env sensor loop started")
+def dht_loop (out_queue, control_queue):
     import dht_service
     dht_service.init()
     while control_queue.empty():
@@ -40,6 +39,31 @@ def env_loop (out_queue, control_queue):
             pass
         time.sleep(1)
     dht_service.stop()
+
+def bme680_loop (out_queue, control_queue):
+    import bme680_service
+    bme680_service.init()
+    while control_queue.empty():
+        p = bme680_service.read_packet()
+        if p:
+            out_queue.put(p)
+        elif isinstance(p, str):
+            if p == "FAIL":
+                print("ERROR: [aqi] bme680 failure")
+                break
+        else:
+            pass
+        time.sleep(1)
+    bme680_service.stop()
+
+def env_loop (out_queue, control_queue):
+    print("INFO: [aqi] env sensor loop started")
+    if aqi_gadget_config.use_dht_sensor:
+        dht_loop(out_queue, control_queue)
+    elif aqi_gadget_config.use_bme680_sensor:
+        bme680_loop(out_queue, control_queue)
+    else:
+        print("ERROR: [aqi] misconfigured env sensor")
     print("INFO: [aqi] shutting down env sensor")
 
 def pm25_loop (out_queue, control_queue):
@@ -58,7 +82,7 @@ def pm25_loop (out_queue, control_queue):
 def display_loop (output_queue):
     print("INFO: [aqi] display loop started")
     import tft_display
-    modes          = ["AQI", "LRAPA", "AQandU", "HOST", "IP", "TEMP", "CPU"]
+    modes          = ["AQI", "NativeAQI", "HOST", "IP", "TEMP", "CPU"]
     mode_index     = 0
     stop           = False
     backlight_time = time.time()
