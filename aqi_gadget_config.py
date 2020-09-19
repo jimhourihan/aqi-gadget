@@ -1,6 +1,6 @@
 
-use_mini_tft        = False
-use_pm25_i2c        = False
-use_dht_sensor      = True
-use_bme680_sensor   = False
-temp_offset_celsius = 0.0
+use_mini_tft        = True
+use_pm25_i2c        = True
+use_dht_sensor      = False
+use_bme680_sensor   = True
+temp_offset_celsius = -3.7

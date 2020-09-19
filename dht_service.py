@@ -18,9 +18,11 @@ def stop ():
 def read_packet ():
     global device
     try:
-        temperature_c = device.temperature - aqi_gadget_config.temp_offset_celsius
+        offsetC = aqi_gadget_config.temp_offset_celsius
+        temperature_c = device.temperature + offsetC
         temperature_f = temperature_c * (9 / 5) + 32
-        humidity = device.humidity
+        h_factor = 1.0 / (2.0 ** (offsetC / 11.0))
+        humidity = device.humidity * h_factor
         return {
             "C" : temperature_c,
             "F" : temperature_f,
