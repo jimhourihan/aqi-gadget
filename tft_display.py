@@ -153,8 +153,8 @@ def draw_packet (packet):
         converter = lambda x: x
 
     if converter:
-        raqi = aqi_util.aqi_from_concentration(converter(packet[2]))
-        delta = packet[3]
+        raqi = aqi_util.aqi_from_concentration(converter(packet["pm25_15s"]))
+        delta = packet["pm25_delta"]
         draw_aqi(raqi[0], raqi[2], raqi[1], mode, delta)
     elif mode == "IP":
         draw_message("IP Address", get_host_info()[1])

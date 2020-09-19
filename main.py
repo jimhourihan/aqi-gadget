@@ -73,10 +73,10 @@ def pm25_loop (out_queue, control_queue):
     while control_queue.empty():
         #(pm25, avg_pm25, sample_time, desc) = pm25_service.read_packet()
         p = pm25_service.read_packet()
-        if p[-1] == "OK":
+        if p["status"] == "OK":
             out_queue.put(p)
         else:
-            print("ERROR:[aqi] ", p[-1])
+            print("ERROR:[aqi] ", p["status"])
     print("INFO: [aqi] shutting down pm sensor")
 
 def display_loop (output_queue):
@@ -105,7 +105,7 @@ def display_loop (output_queue):
             tft_display.draw_clear()
             backlight = False
             
-        if isinstance(item, tuple):
+        if isinstance(item, dict):
             pm_packet = item
         elif isinstance(item, int):
             light = tft_display.backlight_state()

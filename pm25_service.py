@@ -56,7 +56,15 @@ def emulate_read_packet ():
     avg_delta = pm25 - avg_1m_pm25
     avg_1m_pm25 = pm25
     avg_15s_pm25 = pm25
-    return (pm25, avg_1m_pm25, avg_15s_pm25, avg_delta, current_time, "OK")
+    #return (pm25, avg_1m_pm25, avg_15s_pm25, avg_delta, current_time, "OK")
+    return {
+        "pm25" : pm25,
+        "pm25_1m" : avg_1m_pm25,
+        "pm25_15s" : avg_15s_pm25,
+        "pm25_delta" : avg_delta,
+        "time" : current_time,
+        "status" : "OK",
+    }
 
 def read_packet ():
     if _emulate:
@@ -112,7 +120,14 @@ def read_packet ():
 
     buffer = buffer[32:]
 
-    return (pm25_env, avg_1m_pm25, avg_15s_pm25, avg_delta, sample_time, "OK")
+    return {
+        "pm25" : pm25_env,
+        "pm25_1m" : avg_1m_pm25,
+        "pm25_15s" : avg_15s_pm25,
+        "pm25_delta" : avg_delta,
+        "time" : sample_time,
+        "status" : "OK",
+    }
 
 if __name__ == '__main__':
     init()

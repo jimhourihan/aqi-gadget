@@ -6,9 +6,11 @@ from aqi_util import *
 from datetime import datetime
 from cherrypy.process.plugins import BackgroundTask
 
-server_ip   = "127.0.0.1"
-server_port = 8081
-server_name = "localhost"
+server_ip     = "127.0.0.1"
+server_port   = 8081
+server_name   = "localhost"
+packet_buffer = []
+max_packets   = 100
 
 envhtml = Template("""
 <style>
@@ -191,9 +193,10 @@ class RawDataServer (object):
                     print("INFO: [aqi] shutting down web server")
                     cherrypy.engine.exit()
             elif isinstance(v, dict):
-                self.env_value = v
-            else:
-                self.pm_value = v
+                if "pm25" in v:
+                    self.pm_value = v
+                else:
+                    self.env_value = v
 
     @cherrypy.expose
     def raw (self):
@@ -220,7 +223,7 @@ class RawDataServer (object):
 
     def big_aqi (self, other_keys):
 
-        c          = self.pm_value[2]
+        c          = self.pm_value["pm25_15s"]
         h          = self.env_value["H"]
         aqi        = aqi_from_concentration(EPA_correction(c, h))
         b_aqi      = aqi_from_concentration(c)[0]
@@ -279,7 +282,7 @@ class RawDataServer (object):
 
     @cherrypy.expose
     def epa (self, refresh=100000):
-        c = self.pm_value[2]
+        c = self.pm_value["pm25_15s"]
         h = self.env_value["H"]
         epa = aqi_from_concentration(EPA_correction(c, h))
         native = aqi_from_concentration(c)
@@ -302,7 +305,7 @@ class RawDataServer (object):
 
     @cherrypy.expose
     def native (self, refresh=100000):
-        c = self.pm_value[0]
+        c = self.pm_value["pm25"]
         h = self.env_value["H"]
         epa = aqi_from_concentration(EPA_correction(c, h))
         native = aqi_from_concentration(c)
