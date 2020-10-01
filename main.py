@@ -4,6 +4,7 @@ import time
 import signal
 import sys
 import os
+import setproctitle
 from multiprocessing import Process, Queue
 import web_raw_data 
 import aqi_util
@@ -27,6 +28,7 @@ signal.signal(signal.SIGTERM, signal_handler)
 def dht_loop (out_queue, control_queue):
     import dht_service
     dht_service.init()
+    setproctitle.setproctitle("aqi: dht_loop")
     while control_queue.empty():
         p = dht_service.read_packet()
         if p:
@@ -43,6 +45,7 @@ def dht_loop (out_queue, control_queue):
 def bme680_loop (out_queue, control_queue):
     import bme680_service
     bme680_service.init()
+    setproctitle.setproctitle("aqi: bme680_loop")
     while control_queue.empty():
         p = bme680_service.read_packet()
         if p:
@@ -70,6 +73,7 @@ def pm25_loop (out_queue, control_queue):
     print("INFO: [aqi] pm sensor loop started")
     import pm25_service
     pm25_service.init(emulate=False, use_i2c=aqi_gadget_config.use_pm25_i2c)
+    setproctitle.setproctitle("aqi: pm25_loop")
     while control_queue.empty():
         #(pm25, avg_pm25, sample_time, desc) = pm25_service.read_packet()
         p = pm25_service.read_packet()
@@ -77,6 +81,7 @@ def pm25_loop (out_queue, control_queue):
             out_queue.put(p)
         else:
             print("ERROR:[aqi] ", p["status"])
+    pm25_service.stop()
     print("INFO: [aqi] shutting down pm sensor")
 
 def display_loop (output_queue):
@@ -93,11 +98,12 @@ def display_loop (output_queue):
     tft_display.set_backlight(True)
     tft_display.draw_clear()
 
+    setproctitle.setproctitle("aqi: display_loop")
     while not stop:
         pm_packet = None
         t = time.time()
         item = output_queue.get() ## blocks
-        while not output_queue.empty() and isinstance(item, tuple):
+        while not output_queue.empty() and isinstance(item, dict):
             item = output_queue.get()
 
         if backlight and (t - backlight_time) > 60.0:
@@ -131,6 +137,7 @@ def display_loop (output_queue):
             pass
                 
         if pm_packet == None or tft_display.backlight_state() == False:
+            time.sleep(0.2)
             pass
         else:
             tft_display.draw_packet(pm_packet)
@@ -142,6 +149,7 @@ def display_loop (output_queue):
 def event_loop (control_queue, event_queue):
     print("INFO: [aqi] event loop started")
     import tft_buttons
+    setproctitle.setproctitle("aqi: event_loop")
     while control_queue.empty():
         s = tft_buttons.event()
         if s:
@@ -156,14 +164,19 @@ def run ():
 
     (machine, ipaddress) = web_raw_data.get_host_info()
 
+    setproctitle.setproctitle("aqi: pm25 process")
     pm25_queue         = Queue()
     pm25_control_queue = Queue()
-    pm25_process       = Process(target=pm25_loop, args=(pm25_queue, pm25_control_queue))
+    pm25_process       = Process(target=pm25_loop,
+                                 name="pm25_loop",
+                                 args=(pm25_queue, pm25_control_queue))
     pm25_process.start()
 
+    setproctitle.setproctitle("aqi: web process")
     web_command_queue = Queue()
     web_data_queue    = Queue()
     web_process       = Process(target=web_raw_data.start,
+                                name="web_server",
                                 args = (web_command_queue,
                                         web_data_queue,
                                         ipaddress,
@@ -179,12 +192,19 @@ def run ():
     event_process       = None
 
     if use_display:
+        setproctitle.setproctitle("aqi: display process")
         disp_output_queue  = Queue()
-        disp_process       = Process(target=display_loop, args=(disp_output_queue,))
+        disp_process       = Process(target=display_loop,
+                                     name="display_loop",
+                                     args=(disp_output_queue,))
         disp_process.start()
+
+        setproctitle.setproctitle("aqi: event process")
         event_control_queue = Queue()
         event_event_queue   = Queue()
-        event_process       = Process(target=event_loop, args=(event_control_queue, event_event_queue))
+        event_process       = Process(target=event_loop,
+                                      name="event_loop",
+                                      args=(event_control_queue, event_event_queue))
         event_process.start()
 
     env_queue         = None
@@ -192,9 +212,12 @@ def run ():
     env_process       = None
 
     if use_env_sensor:
+        setproctitle.setproctitle("aqi: env process")
         env_queue         = Queue()
         env_control_queue = Queue()
-        env_process       = Process(target=env_loop, args=(env_queue, env_control_queue))
+        env_process       = Process(target=env_loop,
+                                    name="env_loop",
+                                    args=(env_queue, env_control_queue))
         env_process.start()
 
     pm_packet = None
@@ -208,6 +231,7 @@ def run ():
     processes = filter(None, [env_process, event_process, disp_process,
                               pm25_process, web_process])
 
+    setproctitle.setproctitle("aqi: main")
     while not stop_flag:
         if use_display and not event_event_queue.empty():
             e = event_event_queue.get()
@@ -225,11 +249,11 @@ def run ():
         pm_packet = None
         env_packet = None
 
-        if pm25_queue and not pm25_queue.empty():
-            pm_packet = pm25_queue.get() ## blocks
+        #if pm25_queue and not pm25_queue.empty():
+        pm_packet = pm25_queue.get() ## blocks
 
-        if env_queue and not env_queue.empty():
-            env_packet = env_queue.get()
+        #if env_queue and not env_queue.empty():
+        env_packet = env_queue.get()
 
         try:
             if use_display and pm_packet:
@@ -251,6 +275,11 @@ def run ():
         q.put("STOP")
 
     for p in processes:
-        p.join()
+        print("INFO: [aqi] joining", p.name)
+        p.join(10)
+        if p.is_alive():
+            print("WARNING: [aqi]", p.name, "not responding, calling terminate()")
+            p.terminate()
+        print("INFO: [aqi] joined", p.name)
 
 run()

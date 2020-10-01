@@ -343,6 +343,8 @@ def start (ask_queue, data_queue, host=None, port=None, name=None):
     global server_ip
     global server_port
     global server_name
+    import setproctitle
+    setproctitle.setproctitle("aqi: web server")
     (machine, ipaddress) = get_host_info()
     cherrypy.log.screen = False
     if host == None:

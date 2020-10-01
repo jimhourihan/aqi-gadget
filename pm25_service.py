@@ -40,6 +40,15 @@ def init (emulate=False, use_i2c=True):
             uart = serial.Serial("/dev/ttyS0", baudrate=9600, timeout=0.25)
             pm25 = adafruit_pm25.PM25_UART(uart, None)
             
+def stop ():
+    global _emulate
+    global uart
+    global i2c
+    global pm25
+    if i2c:
+        i2c.deinit()
+    if uart:
+        uart.close()
 
 def emulate_read_packet ():
     global last_sample_time
@@ -131,7 +140,11 @@ def read_packet ():
 
 if __name__ == '__main__':
     init()
+    count = 0
     while True:
         time.sleep(1)
         p = read_packet()
         print(str(p))
+        count = count + 1
+        if count > 10:
+            break
