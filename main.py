@@ -144,6 +144,9 @@ def display_loop (output_queue):
             last_pm_packet = pm_packet
 
     tft_display.draw_off()
+    # eat any left over queued items
+    while not output_queue.empty():
+        item = output_queue.get()
     print("INFO: [aqi] shutting down display")
 
 def event_loop (control_queue, event_queue):
@@ -249,11 +252,11 @@ def run ():
         pm_packet = None
         env_packet = None
 
-        #if pm25_queue and not pm25_queue.empty():
-        pm_packet = pm25_queue.get() ## blocks
+        if pm25_queue and not pm25_queue.empty():
+            pm_packet = pm25_queue.get() ## blocks
 
-        #if env_queue and not env_queue.empty():
-        env_packet = env_queue.get()
+        if env_queue and not env_queue.empty():
+            env_packet = env_queue.get()
 
         try:
             if use_display and pm_packet:
@@ -273,6 +276,12 @@ def run ():
     # SHUTDOWN
     for q in control_queues:
         q.put("STOP")
+
+    while not event_event_queue.empty():
+        e = event_event_queue.get()
+
+    while not pm25_queue.empty():
+        p = pm25_queue.get()
 
     for p in processes:
         print("INFO: [aqi] joining", p.name)

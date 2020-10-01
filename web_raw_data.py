@@ -1,5 +1,6 @@
 import cherrypy
 import subprocess
+import time
 from multiprocessing import Queue
 from string import Template
 from aqi_util import *
@@ -205,7 +206,7 @@ class RawDataServer (object):
 
     @cherrypy.expose
     def env (self, refresh=10000):
-        now = datetime.now()
+        t = self.env_value["time"]
         F = "{:.1f}".format(self.env_value["F"])
         C = "{:.1f}".format(self.env_value["C"])
         H = "{:.1f}".format(self.env_value["H"])
@@ -216,7 +217,7 @@ class RawDataServer (object):
             "TEMPF" : F,
             "TEMPC" : C,
             "HUMIDITY" : H,
-            "TIME" : now.ctime(),
+            "TIME" : time.ctime(t),
             "REFRESH" : str(refresh),
         }
         return envhtml.substitute(keys)
@@ -225,6 +226,7 @@ class RawDataServer (object):
 
         c          = self.pm_value["pm25_15s"]
         h          = self.env_value["H"]
+        t          = self.pm_value["time"]
         aqi        = aqi_from_concentration(EPA_correction(c, h))
         b_aqi      = aqi_from_concentration(c)[0]
         b_temp     = self.env_value["F"]
@@ -266,7 +268,8 @@ class RawDataServer (object):
             "HOST" : port,
             "MACHINE" : machine,
             "DESC" : aqi[1],
-            "TIME" : now.ctime(),
+            #"TIME" : now.ctime(),
+            "TIME" : time.ctime(t),
             "REFRESH" : str(10000),
         }
 
