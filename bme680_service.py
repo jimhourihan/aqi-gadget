@@ -1,5 +1,6 @@
 import board
 import busio
+import time
 import adafruit_bme680
 import aqi_gadget_config
 
@@ -33,7 +34,8 @@ def read_packet ():
         "F" : tempC * 1.8 + 32.0,
         "H" : h,
         "hPa" : mbars,
-        "Gas" : gas
+        "Gas" : gas,
+        "time" : time.time()
     }
 
 def stop ():

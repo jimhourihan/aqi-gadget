@@ -201,7 +201,7 @@ class RawDataServer (object):
 
     @cherrypy.expose
     def raw (self):
-        val = self.pm_value
+        val = {**self.env_value, **self.pm_value}
         return str(val)
 
     @cherrypy.expose

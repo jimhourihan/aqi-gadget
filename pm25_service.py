@@ -102,14 +102,21 @@ def read_packet ():
             pass
             #return not_a_result("Unable to read from sensor")
 
-    pm25_env = aqdata["pm25 standard"]
+    pm25_std    = aqdata["pm25 standard"]
+    pm25_env    = aqdata["pm25 env"]
+    pm03_count  = aqdata["particles 03um"]
+    pm05_count  = aqdata["particles 05um"]
+    pm10_count  = aqdata["particles 10um"]
+    pm25_count  = aqdata["particles 25um"]
+    pm50_count  = aqdata["particles 50um"]
+    pm100_count = aqdata["particles 100um"]
 
     if elapsed < 2.3:
         # device may repeat data if under this limit
         pass
     else:
         last_sample_time = sample_time
-        pm25_buffer.append((pm25_env, sample_time))
+        pm25_buffer.append((pm25_std, sample_time))
 
         while len(pm25_buffer) > 27:
             pm25_buffer.pop(0)
@@ -130,7 +137,14 @@ def read_packet ():
     buffer = buffer[32:]
 
     return {
-        "pm25" : pm25_env,
+        "pm25" : pm25_std,
+        "pm25_env" : pm25_env,
+        "pm03_count" : pm03_count,
+        "pm05_count" : pm05_count,
+        "pm10_count" : pm10_count,
+        "pm25_count" : pm25_count,
+        "pm50_count" : pm50_count,
+        "pm100_count" : pm100_count,
         "pm25_1m" : avg_1m_pm25,
         "pm25_15s" : avg_15s_pm25,
         "pm25_delta" : avg_delta,
