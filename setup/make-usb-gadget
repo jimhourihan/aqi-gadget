@@ -1,0 +1,35 @@
+#!/bin/sh
+# go to configfs directory for USB gadgets
+CONFIGFS_ROOT=/sys/kernel/config # adapt to your machine
+HOST="32:71:15:18:ff:7a" # "HostPC"
+SELF="32:71:15:18:ff:7b" # "Ethernet Gadget"
+
+cd "${CONFIGFS_ROOT}"/usb_gadget
+
+# create gadget directory and enter it
+mkdir g1
+cd g1
+
+# USB ids
+echo 0x1d6b > idVendor
+echo 0x104 > idProduct
+
+# USB strings, optional
+mkdir strings/0x409 # US English, others rarely seen
+echo "Absolute Garbage" > strings/0x409/manufacturer
+echo "AQI Gadget" > strings/0x409/product
+echo "sn0001" > strings/0x409/serialnumber
+
+# create the (only) configuration
+mkdir configs/c.1 # dot and number mandatory
+
+# create the (only) function
+mkdir functions/ecm.usb0 
+echo $HOST > functions/ecm.usb0/host_addr
+echo $SELF > functions/ecm.usb0/dev_addr
+
+# assign function to configuration
+ln -s functions/ecm.usb0/ configs/c.1/
+
+# bind!
+ls /sys/class/udc > UDC 

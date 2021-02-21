@@ -23,6 +23,7 @@ EOF
 
 cat >> config.txt <<EOF
 dtoverlay=dwc2
+enable_uart=1
 EOF
 
 cat cmdline.txt | sed "s/rootwait/rootwait modules-load=dwc2,g_ether/" > new_cmdline.txt

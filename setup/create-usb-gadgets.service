@@ -1,0 +1,11 @@
+[Unit]
+Description=Create USB gadgets
+
+[Service]
+Type=oneshot
+ExecStart=/boot/make-usb-gadget
+StandardInput=tty
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
