@@ -1,6 +1,6 @@
 #!/bin/sh
 
-raspi-config nonint do_change_hostname aqi-gadget
+#raspi-config nonint do_change_hostname aqi-gadget
 apt update
 apt upgrade -y
 apt install dnsmasq -y
@@ -16,7 +16,7 @@ iface usb0 inet static
       netmask 255.255.255.0
 EOF
 
-cat >> /etc/dnsmasq.d/usb <<EOF
+cat > /etc/dnsmasq.d/usb <<EOF
 interface=usb0
 listen-address=10.10.10.1
 dhcp-range=10.10.10.1,10.10.10.3,255.255.255.0,1h
@@ -24,6 +24,7 @@ dhcp-option=3
 leasefile-ro
 EOF
 
+# NOTE: appending
 cat >> /etc/dhcpcd.conf <<EOF
 denyinterfaces usb0
 noipv4ll
@@ -67,7 +68,7 @@ EOF
 
 chmod +x /boot/make-usb-gadget
 
-cat /etc/systemd/system/create-usb-gadgets.service <<EOF
+cat > /etc/systemd/system/create-usb-gadgets.service <<EOF
 [Unit]
 Description=Create USB gadgets
 
@@ -81,7 +82,8 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-systemctl enable --now dnsmasq
 systemctl daemon-reload
+systemctl enable --now dnsmasq
 systemctl enable create-usb-gadgets
+#reboot
 
