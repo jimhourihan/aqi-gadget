@@ -5,8 +5,8 @@
 echo "Where is the SD card /boot directory mounted? (e.g. /Volumes/boot on MacOS)"
 read -p "Path to /boot: " boot_path
 
-if [ -f $boot_path ]; then
-    cd boot_path
+if [ -d "$boot_path" ]; then
+    cd $boot_path
 else
     echo "ERROR: $boot_path does not exist"
     exit -1
@@ -36,5 +36,6 @@ dtoverlay=dwc2
 enable_uart=1
 EOF
 
-cat cmdline.txt | sed "s/rootwait/rootwait modules-load=dwc2,libcomposite/" > new_cmdline.txt
+cat cmdline.txt | sed "s/rootwait/modules-load=dwc2,libcomposite rootwait/" > new_cmdline.txt
 mv new_cmdline.txt cmdline.txt
+

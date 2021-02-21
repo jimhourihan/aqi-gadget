@@ -64,6 +64,7 @@ ln -s functions/ecm.usb0/ configs/c.1/
 # bind!
 udevadm settle -t 5 || :
 ls /sys/class/udc > UDC 
+ifup usb0
 EOF
 
 chmod +x /boot/make-usb-gadget
