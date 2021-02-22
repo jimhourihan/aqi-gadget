@@ -1,13 +1,17 @@
 #!/bin/sh
 
 #raspi-config nonint do_change_hostname aqi-gadget
-apt update
-apt upgrade -y
+#apt update
+#apt upgrade -y
 apt install dnsmasq -y
 # Do these if you're not using lite
 #apt-get remove --purge "libreoffice*" -y
 #apt-get purge wolfram-engine -y
 apt autoremove -y
+
+# move the 100MB image file into place and decompress it
+mv storage.fat32.dmg.gz /
+gunzip /storage.fat32.dmg.gz
 
 cat > /etc/network/interfaces.d/usb0 <<EOF
 auto usb0
@@ -53,13 +57,20 @@ echo "sn0001" > strings/0x409/serialnumber
 # create the (only) configuration
 mkdir configs/c.1 # dot and number mandatory
 
-# create the (only) function
+# create the ethernet function
 mkdir functions/ecm.usb0 
 echo 32:71:15:18:ff:7a > functions/ecm.usb0/host_addr
 echo 32:71:15:18:ff:7b > functions/ecm.usb0/dev_addr
 
+# create mass_storage function
+mkdir functions/mass_storage.0
+echo 1 > functions/mass_storage.0/ro
+echo 1 > functions/mass_storage.0/removable
+echo /storage.fat32.dmg > functions/mass_storage.0/lun.0/file
+
 # assign function to configuration
 ln -s functions/ecm.usb0/ configs/c.1/
+ln -s functions/mass_storage.0/ configs/c.1/
 
 # bind!
 udevadm settle -t 5 || :

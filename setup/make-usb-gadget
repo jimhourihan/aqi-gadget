@@ -1,10 +1,7 @@
 #!/bin/sh
 # go to configfs directory for USB gadgets
-CONFIGFS_ROOT=/sys/kernel/config # adapt to your machine
-HOST="32:71:15:18:ff:7a" # "HostPC"
-SELF="32:71:15:18:ff:7b" # "Ethernet Gadget"
 
-cd "${CONFIGFS_ROOT}"/usb_gadget
+cd /sys/kernel/config/usb_gadget
 
 # create gadget directory and enter it
 mkdir g1
@@ -23,13 +20,22 @@ echo "sn0001" > strings/0x409/serialnumber
 # create the (only) configuration
 mkdir configs/c.1 # dot and number mandatory
 
-# create the (only) function
+# create the ethernet function
 mkdir functions/ecm.usb0 
-echo $HOST > functions/ecm.usb0/host_addr
-echo $SELF > functions/ecm.usb0/dev_addr
+echo 32:71:15:18:ff:7a > functions/ecm.usb0/host_addr
+echo 32:71:15:18:ff:7b > functions/ecm.usb0/dev_addr
+
+# create mass_storage function
+mkdir functions/mass_storage.0
+echo 1 > functions/mass_storage.0/ro
+echo 1 > functions/mass_storage.0/removable
+echo /storage.fat32 > functions/mass_storage.0/lun.0/file
 
 # assign function to configuration
 ln -s functions/ecm.usb0/ configs/c.1/
+ln -s functions/mass_storage.0/ configs/c.1/
 
 # bind!
+udevadm settle -t 5 || :
 ls /sys/class/udc > UDC 
+ifup usb0
