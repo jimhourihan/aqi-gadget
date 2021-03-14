@@ -85,5 +85,11 @@ EOF
 systemctl daemon-reload
 systemctl enable --now dnsmasq
 systemctl enable create-usb-gadgets
-#reboot
 
+# install required code for aqi-gadget
+#apt install python3-pip -y
+#pip3 install RPi.GPIO
+#pip3 install serial setproctitle systemd 
+#pip3 install Adafruit-Blinka Adafruit-PlatformDetect Adafruit-PureIO
+#pip3 install adafruit-circuitpython-bme680 adafruit-circuitpython-busdevice adafruit-circuitpython-pm25 adafruit-circuitpython-rgb-display
+#pip3 install CherryPy pillow numpy
