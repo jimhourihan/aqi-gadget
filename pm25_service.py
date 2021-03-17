@@ -33,12 +33,14 @@ def init (emulate=False, use_i2c=True):
     _emulate = emulate
     if not emulate:
         if use_i2c:
+            import adafruit_pm25.i2c
             i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
-            pm25 = adafruit_pm25.PM25_I2C(i2c, None)
+            pm25 = adafruit_pm25.i2c.PM25_I2C(i2c, None)
         else:
             import serial
+            import adafruit_pm25.uart
             uart = serial.Serial("/dev/ttyS0", baudrate=9600, timeout=0.25)
-            pm25 = adafruit_pm25.PM25_UART(uart, None)
+            pm25 = adafruit_pm25.uart.PM25_UART(uart, None)
             
 def stop ():
     global _emulate
