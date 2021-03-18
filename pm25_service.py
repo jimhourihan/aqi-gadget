@@ -62,7 +62,7 @@ def emulate_read_packet ():
         last_sample_time = current_time
     t = current_time - last_sample_time
     s = math.sin(t / 7.0) * 0.5 + 0.5
-    time.sleep(0.5)
+    time.sleep(1.0)
     pm25 = s * 200.0
     avg_delta = pm25 - avg_1m_pm25
     avg_1m_pm25 = pm25
@@ -113,11 +113,12 @@ def read_packet ():
     pm50_count  = aqdata["particles 50um"]
     pm100_count = aqdata["particles 100um"]
 
+    last_sample_time = sample_time
+
     if elapsed < 2.3:
         # device may repeat data if under this limit
         pass
     else:
-        last_sample_time = sample_time
         pm25_buffer.append((pm25_std, sample_time))
 
         while len(pm25_buffer) > 27:
