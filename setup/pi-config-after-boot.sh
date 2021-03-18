@@ -1,8 +1,8 @@
 #!/bin/sh
 
 #raspi-config nonint do_change_hostname aqi-gadget
-#apt update
-#apt upgrade -y
+apt update
+apt upgrade -y
 apt install dnsmasq -y
 # Do these if you're not using lite
 #apt-get remove --purge "libreoffice*" -y
@@ -99,24 +99,19 @@ systemctl daemon-reload
 systemctl enable --now dnsmasq
 systemctl enable create-usb-gadgets
 
-# TURN ON I2C and SPI
-
 # install required code for aqi-gadget
-apt install libopenjp2-7-dev libtiff-dev 
 apt install python3-pip -y
 apt install python3-pil -y
 apt install python3-numpy -y
+apt install libopenjp2-7-dev libtiff-dev -y
 pip3 install --upgrade --force-reinstall spidev
 pip3 install RPi.GPIO
-pip3 install spidev
 pip3 install serial setproctitle systemd 
 pip3 install Adafruit-Blinka Adafruit-PlatformDetect Adafruit-PureIO
 pip3 install adafruit-circuitpython-bme680 adafruit-circuitpython-busdevice adafruit-circuitpython-pm25 adafruit-circuitpython-rgb-display
-pip3 install CherryPy pillow numpy
 pip3 install CherryPy
-#pip3 install pillow numpy
+pip3 install pillow numpy
 
 # ro sdcard setup
 apt-get remove --purge triggerhappy logrotate dphys-swapfile -y
-
 apt autoremove -y

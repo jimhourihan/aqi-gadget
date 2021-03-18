@@ -1,5 +1,29 @@
 #!/bin/sh
 
+# Given a filename, a regex pattern to match and a replacement string:
+# Replace string if found, else no change.
+# (# $1 = filename, $2 = pattern to match, $3 = replacement)
+replace() {
+	grep $2 $1 >/dev/null
+	if [ $? -eq 0 ]; then
+		# Pattern found; replace in file
+		sed -i "s/$2/$3/g" $1 >/dev/null
+	fi
+}
+
+# Given a filename, a regex pattern to match and a replacement string:
+# If found, perform replacement, else append file w/replacement on new line.
+replaceAppend() {
+	grep $2 $1 >/dev/null
+	if [ $? -eq 0 ]; then
+		# Pattern found; replace in file
+		sed -i "s/$2/$3/g" $1 >/dev/null
+	else
+		# Not found; append on new line (silently)
+		echo $3 | sudo tee -a $1 >/dev/null
+	fi
+}
+
 # run this in /boot on the machine you burned the ssd card on
 # (before the first boot on the pi zero)
 echo "Where is the SD card /boot directory mounted? (e.g. /Volumes/boot on MacOS)"
@@ -33,9 +57,10 @@ network={
 EOF
 
 echo "INFO: UART is enabled"
+
+replaceAppend(config.txt, '#dtparam=i2c_arm=on', 'dtparam=i2c_arm=on')
+replaceAppend(config.txt, '#dtparam=spi=on', 'dtparam=spi=on')
 cat >> config.txt <<EOF
-dtparam=i2c_arm=on
-dtparam=spi=on
 dtoverlay=dwc2
 enable_uart=1
 EOF
