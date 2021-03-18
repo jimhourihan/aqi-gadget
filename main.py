@@ -14,6 +14,7 @@ import systemd.daemon
 stop_flag      = False
 use_display    = aqi_gadget_config.use_mini_tft
 use_env_sensor = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme680_sensor
+use_web_server = aqi_gadget_config.use_web_server
 
 def signal_handler (sig, frame):
     global stop_flag
@@ -175,24 +176,29 @@ def run ():
                                  args=(pm25_queue, pm25_control_queue))
     pm25_process.start()
 
-    setproctitle.setproctitle("aqi: web process")
-    web_command_queue = Queue()
-    web_data_queue    = Queue()
-    web_process       = Process(target=web_raw_data.start,
-                                name="web_server",
-                                args = (web_command_queue,
-                                        web_data_queue,
-                                        ipaddress,
-                                        80 if root else 8080,
-                                        machine))
-    web_process.start()
-
     disp_output_queue  = None
     disp_process       = None
 
     event_control_queue = None
     event_event_queue   = None
     event_process       = None
+
+    web_command_queue = None
+    web_data_queue    = None
+    web_process       = None
+
+    if use_web_server:
+        setproctitle.setproctitle("aqi: web process")
+        web_command_queue = Queue()
+        web_data_queue    = Queue()
+        web_process       = Process(target=web_raw_data.start,
+                                    name="web_server",
+                                    args = (web_command_queue,
+                                            web_data_queue,
+                                            ipaddress,
+                                            80 if root else 8080,
+                                            machine))
+        web_process.start()
 
     if use_display:
         setproctitle.setproctitle("aqi: display process")
@@ -264,11 +270,11 @@ def run ():
         except:
             pass
 
-        if pm_packet != None:
-            web_data_queue.put(pm_packet)
-
-        if env_packet != None:
-            web_data_queue.put(env_packet)
+        if use_web_server:
+            if pm_packet != None:
+                web_data_queue.put(pm_packet)
+            if env_packet != None:
+                web_data_queue.put(env_packet)
 
         if pm_packet == None and env_packet == None:
             time.sleep(.1)
@@ -277,7 +283,7 @@ def run ():
     for q in control_queues:
         q.put("STOP")
 
-    while not event_event_queue.empty():
+    while event_event_queue and not event_event_queue.empty():
         e = event_event_queue.get()
 
     while not pm25_queue.empty():
