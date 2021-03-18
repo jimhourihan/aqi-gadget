@@ -34,6 +34,8 @@ EOF
 
 echo "INFO: UART is enabled"
 cat >> config.txt <<EOF
+dtparam=i2c_arm=on
+dtparam=spi=on
 dtoverlay=dwc2
 enable_uart=1
 EOF

@@ -76,6 +76,7 @@ ln -s functions/mass_storage.0/ configs/c.1/
 udevadm settle -t 5 || :
 ls /sys/class/udc > UDC 
 ifup usb0
+#ifconfig wlan0 down
 EOF
 
 chmod +x /boot/make-usb-gadget
@@ -98,10 +99,24 @@ systemctl daemon-reload
 systemctl enable --now dnsmasq
 systemctl enable create-usb-gadgets
 
+# TURN ON I2C and SPI
+
 # install required code for aqi-gadget
-#apt install python3-pip -y
-#pip3 install RPi.GPIO
-#pip3 install serial setproctitle systemd 
-#pip3 install Adafruit-Blinka Adafruit-PlatformDetect Adafruit-PureIO
-#pip3 install adafruit-circuitpython-bme680 adafruit-circuitpython-busdevice adafruit-circuitpython-pm25 adafruit-circuitpython-rgb-display
-#pip3 install CherryPy pillow numpy
+apt install libopenjp2-7-dev libtiff-dev 
+apt install python3-pip -y
+apt install python3-pil -y
+apt install python3-numpy -y
+pip3 install --upgrade --force-reinstall spidev
+pip3 install RPi.GPIO
+pip3 install spidev
+pip3 install serial setproctitle systemd 
+pip3 install Adafruit-Blinka Adafruit-PlatformDetect Adafruit-PureIO
+pip3 install adafruit-circuitpython-bme680 adafruit-circuitpython-busdevice adafruit-circuitpython-pm25 adafruit-circuitpython-rgb-display
+pip3 install CherryPy pillow numpy
+pip3 install CherryPy
+#pip3 install pillow numpy
+
+# ro sdcard setup
+apt-get remove --purge triggerhappy logrotate dphys-swapfile -y
+
+apt autoremove -y
