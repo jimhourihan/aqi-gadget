@@ -7,7 +7,9 @@ replace() {
 	grep $2 $1 >/dev/null
 	if [ $? -eq 0 ]; then
 		# Pattern found; replace in file
-		sed -i "s/$2/$3/g" $1 >/dev/null
+                cat $1 | sed "s/$2/$3/g" > tmp.txt
+                mv tmp.txt $1
+		#sed -i "s/$2/$3/g" $1 >/dev/null
 	fi
 }
 
@@ -17,10 +19,12 @@ replaceAppend() {
 	grep $2 $1 >/dev/null
 	if [ $? -eq 0 ]; then
 		# Pattern found; replace in file
-		sed -i "s/$2/$3/g" $1 >/dev/null
+                cat $1 | sed "s/$2/$3/g" > tmp.txt
+                mv tmp.txt $1
+		#sed -i "s/$2/$3/g" $1 >/dev/null
 	else
 		# Not found; append on new line (silently)
-		echo $3 | sudo tee -a $1 >/dev/null
+		echo $3 >> $1
 	fi
 }
 
@@ -58,8 +62,8 @@ EOF
 
 echo "INFO: UART is enabled"
 
-replaceAppend(config.txt, '#dtparam=i2c_arm=on', 'dtparam=i2c_arm=on')
-replaceAppend(config.txt, '#dtparam=spi=on', 'dtparam=spi=on')
+replaceAppend config.txt "^#dtparam=i2c_arm=on$" "dtparam=i2c_arm=on"
+replaceAppend config.txt "^#dtparam=spi=on$" "dtparam=spi=on"
 cat >> config.txt <<EOF
 dtoverlay=dwc2
 enable_uart=1
