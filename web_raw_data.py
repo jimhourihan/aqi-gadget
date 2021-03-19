@@ -339,8 +339,7 @@ class RawDataServer (object):
 def get_host_info ():
     cmd  = 'hostname ; hostname -I'
     lines = subprocess.check_output(cmd, shell=True).decode('utf-8').splitlines()
-    return (lines[0].strip(), lines[1].strip())
-
+    return (lines[0].strip(), lines[1].strip().split())
 
 def start (ask_queue, data_queue, host=None, port=None, name=None):
     global server_ip
@@ -348,10 +347,10 @@ def start (ask_queue, data_queue, host=None, port=None, name=None):
     global server_name
     import setproctitle
     setproctitle.setproctitle("aqi: web server")
-    (machine, ipaddress) = get_host_info()
+    (machine, ipaddresses) = get_host_info()
     cherrypy.log.screen = False
     if host == None:
-        host = ipaddress
+        host = ipaddress[0]
     if port == None:
         port = 8080
     if name == None:

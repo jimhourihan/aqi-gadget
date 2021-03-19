@@ -16,11 +16,11 @@ use_display    = aqi_gadget_config.use_mini_tft
 use_env_sensor = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme680_sensor
 use_web_server = aqi_gadget_config.use_web_server
 
-def check_usb_gadget ():
-    if os.path.exists("/sys/kernel/config/usb_gadget/g1"):
-        # its in gadget mode: turn off WIFI
-        print("INFO: [aqi] USB gadget mode")
-        os.system("ifconfig wlan0 down")
+def check_usb_gadget_attached ():
+    with open("/sys/devices/platform/soc/20980000.usb/udc/20980000.usb/state", 'r') as file:
+        state = file.readline()
+        print("INFO: [aqi] USB gadget mode: " + state)
+        return state != "not attached"
 
 def signal_handler (sig, frame):
     global stop_flag
@@ -172,7 +172,11 @@ def run ():
 
     root = (os.getuid() == 0)
 
-    (machine, ipaddress) = web_raw_data.get_host_info()
+    # Choose which interface to put web server on
+    (machine, ipaddresses) = web_raw_data.get_host_info()
+    ipaddress = [x for x in ipaddresses if x[0:-1] != "10.10.10."]
+    if check_usb_gadget_attached():
+        ipaddress = [x for x in ipaddresses if x[0:-1] == "10.10.10."]
 
     setproctitle.setproctitle("aqi: pm25 process")
     pm25_queue         = Queue()
