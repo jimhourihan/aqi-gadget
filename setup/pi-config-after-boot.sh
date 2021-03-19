@@ -13,6 +13,10 @@ apt autoremove -y
 mv storage.fat32.dmg.gz /
 gunzip /storage.fat32.dmg.gz
 
+cat >> /etc/modules <<EOF
+i2c-dev
+EOF
+
 cat > /etc/network/interfaces.d/usb0 <<EOF
 auto usb0
 iface usb0 inet static
