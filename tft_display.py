@@ -11,6 +11,8 @@ from PIL import ImageFont
 import aqi_util
 import math
 
+ttf_file = "/home/pi/aqi-gadget/Roboto-Bold.ttf"
+
 # Configuration for CS and DC pins for Raspberry Pi
 cs_pin = digitalio.DigitalInOut(board.CE0)
 dc_pin = digitalio.DigitalInOut(board.D25)
@@ -31,8 +33,8 @@ backlight = digitalio.DigitalInOut(board.D22)
 backlight.switch_to_output()
 
 mode        = "AQI"
-bfont       = ImageFont.truetype('/home/pi/fonts/Roboto-Bold.ttf', 90)
-tfont       = ImageFont.truetype('/home/pi/fonts/Roboto-Bold.ttf', 24)
+bfont       = ImageFont.truetype(ttf_file, 90)
+tfont       = ImageFont.truetype(ttf_file, 24)
 mfont       = None
 width       = display.height # rotated
 height      = display.width
@@ -98,7 +100,7 @@ def draw_aqi (aqi, rgb, level, scale_name, delta):
 def draw_message (title, msg):
     global mfont
     if mfont == None:
-        mfont = ImageFont.truetype('/home/pi/fonts/Roboto-Bold.ttf', 30)
+        mfont = ImageFont.truetype(ttf_file, 30)
     draw.rectangle([(0, 0), (width, height)], fill=(0, 0, 0))
     ms = draw.textsize(msg, font=mfont)
     ts = draw.textsize(title, font=tfont)
