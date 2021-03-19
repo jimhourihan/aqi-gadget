@@ -14,7 +14,7 @@ mv storage.fat32.dmg.gz /
 gunzip /storage.fat32.dmg.gz
 
 cat > /boot/aqi-gadget-info <<EOF
-serial_number 1
+serial_number 000
 product AQI Gadget
 manufacturer Absolute Garbage
 hostname_base aqi-gadget
@@ -147,3 +147,6 @@ pip3 install pillow numpy
 # ro sdcard setup
 apt-get remove --purge triggerhappy logrotate dphys-swapfile -y
 apt autoremove -y
+
+# create the gadget and set the new hostname
+/boot/make-usb-gadget
