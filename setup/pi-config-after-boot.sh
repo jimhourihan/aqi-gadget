@@ -13,6 +13,17 @@ apt autoremove -y
 mv storage.fat32.dmg.gz /
 gunzip /storage.fat32.dmg.gz
 
+cat > /boot/aqi-gadget-info <<EOF
+serial_number 1
+product AQI Gadget
+manufacturer Absolute Garbage
+hostname_base aqi-gadget
+config otg wifi adafruit_minitft adafruit_PMSA003I adafruit_BME680
+EOF
+
+SNUM=`awk '{ if ($1 == "serial_number") print $2 }' /boot/aqi-gadget-info`
+HNAME=$HNAME-$SNUM
+
 cat >> /etc/modules <<EOF
 i2c-dev
 EOF
@@ -38,9 +49,25 @@ denyinterfaces usb0
 noipv4ll
 EOF
 
+
 cat > /boot/make-usb-gadget <<EOF
 #!/bin/sh
 # go to configfs directory for USB gadgets
+
+SN=`awk '{ if ($1 == "serial_number") print $2 }' /boot/aqi-gadget-info`
+PROD=`awk '{ if ($1 == "product") for (i=2;i<=NF;i++) printf "%s", $i OFS; }' /boot/aqi-gadget-info`
+MANU=`awk '{ if ($1 == "manufacturer") for (i=2;i<=NF;i++) printf "%s", $i OFS; }' /boot/aqi-gadget-info`
+HNAME=`awk '{ if ($1 == "hostname_base") print $2 }' /boot/aqi-gadget-info`
+CURRENTNAME=`hostname`
+TARGETNAME=$HNAME-$SN
+
+if [ "$CURRENTNAME" = "$TARGETNAME" ]; then
+   HOSTNAME_UPDATE=NO
+else
+   HOSTNAME_UPDATE=YES
+   echo $TARGETNAME > /etc/hostname
+   sed --in-place=bak "s/$CURRENTNAME/$TARGETNAME/" /etc/hosts
+fi
 
 cd /sys/kernel/config/usb_gadget
 
@@ -54,9 +81,9 @@ echo 0x104 > idProduct
 
 # USB strings, optional
 mkdir strings/0x409 # US English, others rarely seen
-echo "Absolute Garbage" > strings/0x409/manufacturer
-echo "AQI Gadget" > strings/0x409/product
-echo "sn0001" > strings/0x409/serialnumber
+echo $MANU > strings/0x409/manufacturer
+echo $PROD > strings/0x409/product
+echo $SN > strings/0x409/serialnumber
 
 # create the (only) configuration
 mkdir configs/c.1 # dot and number mandatory
@@ -81,6 +108,7 @@ udevadm settle -t 5 || :
 ls /sys/class/udc > UDC 
 ifup usb0
 #ifconfig wlan0 down
+#cat /sys/devices/platform/soc/20980000.usb/udc/20980000.usb/state
 EOF
 
 chmod +x /boot/make-usb-gadget
