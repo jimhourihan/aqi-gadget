@@ -16,6 +16,12 @@ use_display    = aqi_gadget_config.use_mini_tft
 use_env_sensor = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme680_sensor
 use_web_server = aqi_gadget_config.use_web_server
 
+def check_usb_gadget ():
+    if os.path.exists("/sys/kernel/config/usb_gadget/g1"):
+        # its in gadget mode: turn off WIFI
+        print("INFO: [aqi] USB gadget mode")
+        os.system("ifconfig wlan0 down")
+
 def signal_handler (sig, frame):
     global stop_flag
     print("INFO: [aqi] stop from signal")
@@ -297,4 +303,5 @@ def run ():
             p.terminate()
         print("INFO: [aqi] joined", p.name)
 
+check_usb_gadget()
 run()
