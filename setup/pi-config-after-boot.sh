@@ -107,8 +107,16 @@ ln -s functions/mass_storage.0/ configs/c.1/
 udevadm settle -t 5 || :
 ls /sys/class/udc > UDC 
 ifup usb0
-#ifconfig wlan0 down
-#cat /sys/devices/platform/soc/20980000.usb/udc/20980000.usb/state
+
+cd /home/pi/aqi-gadget
+./display_connection.py 
+
+ST=`cat /sys/devices/platform/soc/20980000.usb/udc/20980000.usb/state`
+if [ "$ST" = "not attached" ]; then
+    ifconfig usb0 down
+else
+    ifconfig wlan0 down
+fi
 EOF
 
 chmod +x /boot/make-usb-gadget

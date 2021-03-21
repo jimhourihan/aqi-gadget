@@ -40,14 +40,21 @@ width       = display.height # rotated
 height      = display.width
 image       = Image.new('RGB', (width, height))
 draw        = ImageDraw.Draw(image)
-blank_image = Image.new('RGB', (width, height))
+blank_image = None
 
-def init_blank ():
-    blank_draw  = ImageDraw.Draw(blank_image)
-    blank_draw.rectangle([(0, 0), (width, height)], fill=(0, 0, 0))
-    s = blank_draw.textsize("AQI", font=bfont)
-    (sx, sy) = ((width - s[0]) / 2.0, (height - s[1]) / 2.0)
-    blank_draw.text( (sx, sy), "AQI", font=bfont, fill=(180, 180, 180))
+def init_blank (blank_type = 'AQI'):
+    global blank_image
+    if blank_type == 'AQI':
+        blank_image = Image.new('RGB', (width, height))
+        blank_draw  = ImageDraw.Draw(blank_image)
+        blank_draw.rectangle([(0, 0), (width, height)], fill=(0, 0, 0))
+        s = blank_draw.textsize("AQI", font=bfont)
+        (sx, sy) = ((width - s[0]) / 2.0, (height - s[1]) / 2.0)
+        blank_draw.text( (sx, sy), "AQI", font=bfont, fill=(180, 180, 180))
+    elif blank_type == 'usb':
+        blank_image = Image.open('/home/pi/aqi-gadget/images/usb_icon.png')
+    elif blank_type == 'wifi':
+        blank_image = Image.open('/home/pi/aqi-gadget/images/wifi_icon.png')
     display.image(blank_image, 90)
     backlight.value = True
 
@@ -111,7 +118,8 @@ def draw_message (title, msg):
     display.image(image, 90)
 
 def draw_clear ():
-    display.image(blank_image, 90)
+    if blank_image:
+        display.image(blank_image, 90)
 
 def set_mode (m):
     global mode
@@ -173,6 +181,5 @@ def draw_packet (packet):
 if __name__ == '__main__':
     draw_aqi(163, (1.0, 0.0, 0.0), "Sure", "test", 0.0)
 
-init_blank()
 
 

@@ -11,14 +11,10 @@ import aqi_util
 import urllib.request
 import systemd.daemon
 
-stop_flag      = False
-use_display    = aqi_gadget_config.use_mini_tft
-use_env_sensor = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme680_sensor
-use_web_server = aqi_gadget_config.use_web_server
 
 def check_usb_gadget_attached ():
     with open("/sys/devices/platform/soc/20980000.usb/udc/20980000.usb/state", 'r') as file:
-        state = file.readline()
+        state = str(file.readline()).rstrip()
         print("INFO: [aqi] USB gadget mode: " + state)
         return state != "not attached"
 
@@ -31,6 +27,12 @@ def signal_handler (sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
+
+stop_flag      = False
+use_display    = aqi_gadget_config.use_mini_tft
+use_env_sensor = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme680_sensor
+use_web_server = aqi_gadget_config.use_web_server
+is_usb_gadget  = check_usb_gadget_attached()
 
 def dht_loop (out_queue, control_queue):
     import dht_service
@@ -101,6 +103,7 @@ def display_loop (output_queue):
     backlight      = True
     last_pm_packet = None
 
+    tft_display.init_blank('usb' if is_usb_gadget else 'wifi')
     tft_display.set_mode(modes[mode_index])
     tft_display.set_backlight(True)
     tft_display.draw_clear()
@@ -174,9 +177,14 @@ def run ():
 
     # Choose which interface to put web server on
     (machine, ipaddresses) = web_raw_data.get_host_info()
-    ipaddress = [x for x in ipaddresses if x[0:-1] != "10.10.10."]
-    if check_usb_gadget_attached():
-        ipaddress = [x for x in ipaddresses if x[0:-1] == "10.10.10."]
+
+    if len(ipaddresses) > 0:
+        if is_usb_gadget:
+            # using join like this in case the list is degenerate or has
+            # multiple values. cherrypy will only use the first
+            ipaddress = " ".join([x for x in ipaddresses if x[0:-1] == "10.10.10."])
+        else:
+            ipaddress = " ".join([x for x in ipaddresses if x[0:-1] != "10.10.10."])
 
     setproctitle.setproctitle("aqi: pm25 process")
     pm25_queue         = Queue()
@@ -307,5 +315,4 @@ def run ():
             p.terminate()
         print("INFO: [aqi] joined", p.name)
 
-check_usb_gadget()
 run()
