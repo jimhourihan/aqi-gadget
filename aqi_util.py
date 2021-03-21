@@ -8,7 +8,7 @@ def AQandU_correction (c):
     return cc if cc > 0.0 else 0.0
 
 def EPA_correction (c, rh):
-    cc = 0.534 * c - 0.0844 * (rh / 100.0) + 5.604
+    cc = 0.534 * c - 0.0844 * rh + 5.604
     return cc if cc > 0.0 else 0.0
 
 def rgb_shade_from_aqi (aqi):
