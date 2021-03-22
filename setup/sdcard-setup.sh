@@ -72,3 +72,13 @@ EOF
 cat cmdline.txt | sed "s/rootwait/modules-load=dwc2,libcomposite rootwait/" > new_cmdline.txt
 mv new_cmdline.txt cmdline.txt
 
+echo "Insert card into gadget and reboot."
+echo " "
+echo " 1. login to pi@raspberrypi.local"
+echo " 2. cd /boot"
+echo " 3. run 'sudo /bin/sh pi-config-after-boot.sh'"
+echo " 4. edit /boot/aqi-gadget-info"
+echo " 5. copy a aqi-gadget release .tar.gz to ~pi"
+echo " 6. untar the release and cd into the new dir"
+echo " 7. run 'sudo /bin/sh install.sh'"
+echo " 8. reboot in USB mode and verify"

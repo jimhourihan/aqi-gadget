@@ -157,4 +157,4 @@ apt-get remove --purge triggerhappy logrotate dphys-swapfile -y
 apt autoremove -y
 
 # create the gadget and set the new hostname
-/boot/make-usb-gadget
+echo "Needs Reboot"
