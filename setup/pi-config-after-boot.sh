@@ -49,42 +49,6 @@ denyinterfaces usb0
 noipv4ll
 EOF
 
-
-cat > /boot/make-usb-gadget <<EOF
-#!/bin/sh
-# go to configfs directory for USB gadgets
-
-SN=`awk '{ if ($1 == "serial_number") print $2 }' /boot/aqi-gadget-info`
-PROD=`awk '{ if ($1 == "product") for (i=2;i<=NF;i++) printf "%s", $i OFS; }' /boot/aqi-gadget-info`
-MANU=`awk '{ if ($1 == "manufacturer") for (i=2;i<=NF;i++) printf "%s", $i OFS; }' /boot/aqi-gadget-info`
-HNAME=`awk '{ if ($1 == "hostname_base") print $2 }' /boot/aqi-gadget-info`
-CURRENTNAME=`hostname`
-TARGETNAME=$HNAME-$SN
-
-if [ "$CURRENTNAME" = "$TARGETNAME" ]; then
-   HOSTNAME_UPDATE=NO
-else
-   HOSTNAME_UPDATE=YES
-   echo $TARGETNAME > /etc/hostname
-   sed --in-place=bak "s/$CURRENTNAME/$TARGETNAME/" /etc/hosts
-fi
-
-cd /sys/kernel/config/usb_gadget
-
-# create gadget directory and enter it
-mkdir g1
-cd g1
-
-# USB ids
-echo 0x1d6b > idVendor
-echo 0x104 > idProduct
-
-# USB strings, optional
-mkdir strings/0x409 # US English, others rarely seen
-echo $MANU > strings/0x409/manufacturer
-echo $PROD > strings/0x409/product
-echo $SN > strings/0x409/serialnumber
-
 # create the (only) configuration
 mkdir configs/c.1 # dot and number mandatory
 

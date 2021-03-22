@@ -35,6 +35,7 @@ read -p "Path to /boot: " boot_path
 
 if [ -d "$boot_path" ]; then
     cp pi-config-after-boot.sh $boot_path
+    cp make-usb-gadget $boot_path
     cp storage.fat32.dmg.gz $boot_path
     cd $boot_path
 else
@@ -71,6 +72,7 @@ EOF
 
 cat cmdline.txt | sed "s/rootwait/modules-load=dwc2,libcomposite rootwait/" > new_cmdline.txt
 mv new_cmdline.txt cmdline.txt
+
 
 echo "Insert card into gadget and reboot."
 echo " "
