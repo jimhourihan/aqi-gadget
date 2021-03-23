@@ -308,7 +308,7 @@ class RawDataServer (object):
 
     @cherrypy.expose
     def native (self, refresh=100000):
-        c = self.pm_value["pm25"]
+        c = self.pm_value["pm25_15s"]
         h = self.env_value["H"]
         epa = aqi_from_concentration(EPA_correction(c, h))
         native = aqi_from_concentration(c)

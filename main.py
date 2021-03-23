@@ -96,12 +96,13 @@ def pm25_loop (out_queue, control_queue):
 def display_loop (output_queue):
     print("INFO: [aqi] display loop started")
     import tft_display
-    modes          = ["AQI", "NativeAQI", "HOST", "IP"]
+    modes          = ["AQI", "RAW", "TEMP", "RHUM", "HOST", "IP"]
     mode_index     = 0
     stop           = False
     backlight_time = time.time()
     backlight      = True
-    last_pm_packet = None
+    last_packet    = None
+    output_state   = {}
 
     tft_display.init_blank('usb' if is_usb_gadget else 'wifi')
     tft_display.set_mode(modes[mode_index])
@@ -110,10 +111,11 @@ def display_loop (output_queue):
 
     setproctitle.setproctitle("aqi: display_loop")
     while not stop:
-        pm_packet = None
+        packet = None
         t = time.time()
         item = output_queue.get() ## blocks
         while not output_queue.empty() and isinstance(item, dict):
+            output_state.update(item)
             item = output_queue.get()
 
         if backlight and (t - backlight_time) > 60.0:
@@ -122,7 +124,8 @@ def display_loop (output_queue):
             backlight = False
             
         if isinstance(item, dict):
-            pm_packet = item
+            packet = item
+            output_state.update(packet)
         elif isinstance(item, int):
             light = tft_display.backlight_state()
             if light:
@@ -130,7 +133,7 @@ def display_loop (output_queue):
                     mode_index = (mode_index + 1) % len(modes)
                     tft_display.set_mode(modes[mode_index])
                     backlight_time = t                          # reset backlight timer
-                    pm_packet = last_pm_packet                        # immediately update
+                    packet = last_packet                        # immediately update
                 elif item == 2 or item == 16:
                     tft_display.set_backlight(False)
                     backlight = False
@@ -146,12 +149,12 @@ def display_loop (output_queue):
         else:
             pass
                 
-        if pm_packet == None or tft_display.backlight_state() == False:
+        if packet == None or tft_display.backlight_state() == False:
             time.sleep(0.2)
             pass
         else:
-            tft_display.draw_packet(pm_packet)
-            last_pm_packet = pm_packet
+            tft_display.draw_packet(output_state)
+            last_packet = packet
 
     tft_display.draw_off()
     # eat any left over queued items
@@ -276,15 +279,18 @@ def run ():
         pm_packet = None
         env_packet = None
 
-        if pm25_queue and not pm25_queue.empty():
+        while pm25_queue and not pm25_queue.empty():
             pm_packet = pm25_queue.get() ## blocks
 
-        if env_queue and not env_queue.empty():
+        while env_queue and not env_queue.empty():
             env_packet = env_queue.get()
 
         try:
-            if use_display and pm_packet:
-                disp_output_queue.put(pm_packet, block=False)
+            if use_display:
+                if pm_packet != None:
+                    disp_output_queue.put(pm_packet, block=False)
+                if env_packet != None:
+                    disp_output_queue.put(env_packet, block=False)
         except:
             pass
 

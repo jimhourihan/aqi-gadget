@@ -33,7 +33,7 @@ backlight = digitalio.DigitalInOut(board.D22)
 backlight.switch_to_output()
 
 mode        = "AQI"
-bfont       = ImageFont.truetype(ttf_file, 90)
+bfont       = ImageFont.truetype(ttf_file, 80)
 tfont       = ImageFont.truetype(ttf_file, 24)
 mfont       = None
 width       = display.height # rotated
@@ -73,36 +73,36 @@ def set_backlight (b):
 def backlight_state ():
     return backlight.value
 
-def draw_aqi (aqi, rgb, level, scale_name, delta):
-    aqi_fg = (0, 0, 0)
-    aqi_rgb = (int(rgb[0] * 255.0), int(rgb[1] * 255.0), int(rgb[2] * 255.0))
+def draw_single_value (value, rgb, level, scale_name, delta=None):
+    value_fg = (0, 0, 0)
+    value_rgb = (int(rgb[0] * 255.0), int(rgb[1] * 255.0), int(rgb[2] * 255.0))
     lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
 
     if lum < 0.25:
-        aqi_fg = (200, 200, 200)
+        value_fg = (200, 200, 200)
 
-    #print("draw_aqi", aqi, str(rgb))
-
-    draw.rectangle([(0, 0), (width, height)], fill=aqi_rgb)
-    s = draw.textsize(str(aqi), font=bfont)
+    draw.rectangle([(0, 0), (width, height)], fill=value_rgb)
+    s = draw.textsize(str(value), font=bfont)
     t = draw.textsize(scale_name, font=tfont)
     p = draw.textsize("+", font=bfont)
     w = draw.textsize(level, font=tfont)
-    (sx, sy) = ((width - s[0]) / 2.0 - 10, (height - s[1]) / 2.0 - 20)
+    xmargin = 10 if delta != None else 0
+    (sx, sy) = ((width - s[0]) / 2.0 - xmargin, (height - s[1]) / 2.0 - 20)
     (tx, ty) = (width - t[0] - 10, height - t[1] - 6)
-    draw.text( (sx, sy), str(aqi), font=bfont, fill=aqi_fg)
-    draw.text( (tx, ty), scale_name, font=tfont, fill=aqi_fg)
-    draw.text( (10, ty), level, font=tfont, fill=aqi_fg)
+    draw.text( (sx, sy), str(value), font=bfont, fill=value_fg)
+    draw.text( (tx, ty), scale_name, font=tfont, fill=value_fg)
+    draw.text( (10, ty), level, font=tfont, fill=value_fg)
 
     tsize = 22
     (x, y) = (width - tsize - 10, height / 2.0)
-    if math.fabs(delta) > .05:
+    if delta != None and math.fabs(delta) > .05:
         if delta > 0:
-            draw.polygon([(x,y), (x + tsize,y), (x + tsize/2.0, y - tsize/1.4)], fill=aqi_fg)
+            draw.polygon([(x,y), (x + tsize,y), (x + tsize/2.0, y - tsize/1.4)], fill=value_fg)
         else:
-            draw.polygon([(x,y), (x + tsize,y), (x + tsize/2.0, y + tsize/1.4)], fill=aqi_fg)
+            draw.polygon([(x,y), (x + tsize,y), (x + tsize/2.0, y + tsize/1.4)], fill=value_fg)
 
     display.image(image, 90)
+
 
 def draw_message (title, msg):
     global mfont
@@ -163,15 +163,25 @@ def draw_packet (packet):
         converter = lambda x: x
 
     if converter:
-        raqi = aqi_util.aqi_from_concentration(converter(packet["pm25_15s"]))
+        (aqi, level, rgb) = aqi_util.aqi_from_concentration(converter(packet["pm25_15s"]))
         delta = packet["pm25_delta"]
-        draw_aqi(raqi[0], raqi[2], raqi[1], mode, delta)
+        draw_single_value(aqi, rgb, level, mode, delta)
+    elif mode == "RAW":
+        v = "{:.0f}".format(packet["pm25_15s"])
+        delta = packet["pm25_delta"]
+        draw_single_value(v, (.20, .20, .20), "Conc", "µg/m^3", delta)
     elif mode == "IP":
         draw_message("IP Address", get_host_info()[1])
     elif mode == "HOST":
         draw_message("Hostname", get_host_info()[0])
     elif mode == "TEMP":
-        draw_message("Tempurature", get_temperature())
+        v = "{:.0f}°".format(packet["F"])
+        draw_single_value(v, (.75, .75, .75), "Temp", "F")
+    elif mode == "RHUM":
+        rh = packet["H"]
+        v = "{:.0f}%".format(rh)
+        off = rh / 100.0 * 0.25
+        draw_single_value(v, (.75, .75 + off, .75 + off), "Humidity", "Rel")
     elif mode == "CPU":
         info = get_cpu_info()
         draw_message(str(info[2]) + " Cores", str(info[0]) + "% | " + str(info[1]) + "%")
@@ -179,7 +189,7 @@ def draw_packet (packet):
         draw_clear()
 
 if __name__ == '__main__':
-    draw_aqi(163, (1.0, 0.0, 0.0), "Sure", "test", 0.0)
+    draw_single_value(163, (1.0, 0.0, 0.0), "Sure", "test", 0.0)
 
 
 
