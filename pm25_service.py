@@ -92,8 +92,10 @@ def read_packet ():
     while elapsed < 1.0:
         sample_time = time.time()
         elapsed = sample_time - last_sample_time
-        if elapsed < 1.0:
-            time.sleep(1.0)
+        if elapsed < 2.3:
+            # device may repeat data if under this limit
+            time.sleep(2.3 - elapsed)
+            elapsed = sample_time - last_sample_time
 
     aqdata = None
 
@@ -113,29 +115,31 @@ def read_packet ():
     pm50_count  = aqdata["particles 50um"]
     pm100_count = aqdata["particles 100um"]
 
+    #if elapsed < 2.3:
+    #    time.sleep(2.3 - elapsed)
+    #else:
     last_sample_time = sample_time
+    pm25_buffer.append((pm25_std, sample_time))
 
-    if elapsed < 2.3:
-        # device may repeat data if under this limit
-        pass
-    else:
-        pm25_buffer.append((pm25_std, sample_time))
+    #while len(pm25_buffer) > 27:
+    while len(pm25_buffer) > 6:
+        pm25_buffer.pop(0)
 
-        while len(pm25_buffer) > 27:
-            pm25_buffer.pop(0)
+    last_avg = avg_15s_pm25
+    avg_1m_pm25 = 0
+    avg_15s_pm25 = 0
+    count = 0
+    for (pm25_samp, time_samp) in reversed(pm25_buffer):
+        avg_1m_pm25 += pm25_samp
+        if count < 6:
+            avg_15s_pm25 += pm25_samp
+            count = count + 1
+    avg_1m_pm25 /= len(pm25_buffer)
+    avg_15s_pm25 /= count
+    #avg_delta = (avg_15s_pm25 - last_avg) / elapsed
+    avg_delta = pm25_std - avg_15s_pm25
 
-        last_avg = avg_1m_pm25
-        avg_1m_pm25 = 0
-        avg_15s_pm25 = 0
-        count = 0
-        for (pm25_samp, time_samp) in pm25_buffer:
-            avg_1m_pm25 += pm25_samp
-            if count < 6:
-                avg_15s_pm25 += pm25_samp
-                count = count + 1
-        avg_1m_pm25 /= len(pm25_buffer)
-        avg_15s_pm25 /= count
-        avg_delta = (avg_1m_pm25 - last_avg) / elapsed
+    #print(str(pm25_buffer))
 
     buffer = buffer[32:]
 
@@ -148,7 +152,7 @@ def read_packet ():
         "pm25_count" : pm25_count,
         "pm50_count" : pm50_count,
         "pm100_count" : pm100_count,
-        "pm25_1m" : avg_1m_pm25,
+        #"pm25_1m" : avg_1m_pm25,
         "pm25_15s" : avg_15s_pm25,
         "pm25_delta" : avg_delta,
         "time" : sample_time,
