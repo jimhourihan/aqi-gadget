@@ -96,7 +96,7 @@ def pm25_loop (out_queue, control_queue):
 def display_loop (output_queue):
     print("INFO: [aqi] display loop started")
     import tft_display
-    modes          = ["AQI", "RAW", "TEMP", "RHUM", "HOST", "IP"]
+    modes          = ["AQI", "RAW", "GAS", "TEMP", "RHUM", "HOST", "IP"]
     mode_index     = 0
     stop           = False
     backlight_time = time.time()

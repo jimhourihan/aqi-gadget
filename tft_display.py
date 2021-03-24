@@ -38,8 +38,8 @@ tfont       = ImageFont.truetype(ttf_file, 24)
 mfont       = None
 width       = display.height # rotated
 height      = display.width
-image       = Image.new('RGB', (width, height))
-draw        = ImageDraw.Draw(image)
+fb_image    = Image.new('RGB', (width, height))
+fb_draw     = ImageDraw.Draw(fb_image)
 blank_image = None
 
 def init_blank (blank_type = 'AQI'):
@@ -73,7 +73,7 @@ def set_backlight (b):
 def backlight_state ():
     return backlight.value
 
-def draw_single_value (value, rgb, level, scale_name, delta=None):
+def draw_single_value (out_draw, value, rgb, level, scale_name, delta=None):
     value_fg = (0, 0, 0)
     value_rgb = (int(rgb[0] * 255.0), int(rgb[1] * 255.0), int(rgb[2] * 255.0))
     lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
@@ -81,41 +81,38 @@ def draw_single_value (value, rgb, level, scale_name, delta=None):
     if lum < 0.25:
         value_fg = (200, 200, 200)
 
-    draw.rectangle([(0, 0), (width, height)], fill=value_rgb)
-    s = draw.textsize(str(value), font=bfont)
-    t = draw.textsize(scale_name, font=tfont)
-    p = draw.textsize("+", font=bfont)
-    w = draw.textsize(level, font=tfont)
+    out_draw.rectangle([(0, 0), (width, height)], fill=value_rgb)
+    s = out_draw.textsize(str(value), font=bfont)
+    t = out_draw.textsize(scale_name, font=tfont)
+    p = out_draw.textsize("+", font=bfont)
+    w = out_draw.textsize(level, font=tfont)
     xmargin = 10 if delta != None else 0
     (sx, sy) = ((width - s[0]) / 2.0 - xmargin, (height - s[1]) / 2.0 - 20)
     (tx, ty) = (width - t[0] - 10, height - t[1] - 6)
-    draw.text( (sx, sy), str(value), font=bfont, fill=value_fg)
-    draw.text( (tx, ty), scale_name, font=tfont, fill=value_fg)
-    draw.text( (10, ty), level, font=tfont, fill=value_fg)
+    out_draw.text( (sx, sy), str(value), font=bfont, fill=value_fg)
+    out_draw.text( (tx, ty), scale_name, font=tfont, fill=value_fg)
+    out_draw.text( (10, ty), level, font=tfont, fill=value_fg)
 
     tsize = 22
     (x, y) = (width - tsize - 10, height / 2.0)
     if delta != None and math.fabs(delta) > .05:
         if delta > 0:
-            draw.polygon([(x,y), (x + tsize,y), (x + tsize/2.0, y - tsize/1.4)], fill=value_fg)
+            out_draw.polygon([(x,y), (x + tsize,y), (x + tsize/2.0, y - tsize/1.4)], fill=value_fg)
         else:
-            draw.polygon([(x,y), (x + tsize,y), (x + tsize/2.0, y + tsize/1.4)], fill=value_fg)
-
-    display.image(image, 90)
+            out_draw.polygon([(x,y), (x + tsize,y), (x + tsize/2.0, y + tsize/1.4)], fill=value_fg)
 
 
-def draw_message (title, msg):
+def draw_message (out_draw, title, msg):
     global mfont
     if mfont == None:
         mfont = ImageFont.truetype(ttf_file, 30)
-    draw.rectangle([(0, 0), (width, height)], fill=(0, 0, 0))
-    ms = draw.textsize(msg, font=mfont)
-    ts = draw.textsize(title, font=tfont)
+    out_draw.rectangle([(0, 0), (width, height)], fill=(0, 0, 0))
+    ms = out_draw.textsize(msg, font=mfont)
+    ts = out_draw.textsize(title, font=tfont)
     (mx, my) = ((width - ms[0]) / 2.0, (height - ms[1]) / 2.0)
     (tx, ty) = ((width - ts[0]) / 2.0, my - ts[1] - 6)
-    draw.text( (mx, my), msg, font=mfont, fill=(255, 255, 255) )
-    draw.text( (tx, ty), title, font=tfont, fill=(150, 150, 150) )
-    display.image(image, 90)
+    out_draw.text( (mx, my), msg, font=mfont, fill=(255, 255, 255) )
+    out_draw.text( (tx, ty), title, font=tfont, fill=(150, 150, 150) )
 
 def draw_clear ():
     if blank_image:
@@ -165,31 +162,46 @@ def draw_packet (packet):
     if converter:
         (aqi, level, rgb) = aqi_util.aqi_from_concentration(converter(packet["pm25_15s"]))
         delta = packet["pm25_delta"]
-        draw_single_value(aqi, rgb, level, mode, delta)
+        draw_single_value(fb_draw, aqi, rgb, level, mode, delta)
+        display.image(fb_image, 90)
     elif mode == "RAW":
         v = "{:.0f}".format(packet["pm25_15s"])
         delta = packet["pm25_delta"]
-        draw_single_value(v, (.20, .20, .20), "Conc", "µg/m^3", delta)
+        draw_single_value(fb_draw, v, (.20, .20, .20), "Conc", "µg/m^3", delta)
+        display.image(fb_image, 90)
     elif mode == "IP":
-        draw_message("IP Address", get_host_info()[1])
+        draw_message(fb_draw, "IP Address", get_host_info()[1])
+        display.image(fb_image, 90)
     elif mode == "HOST":
-        draw_message("Hostname", get_host_info()[0])
+        draw_message(fb_draw, "Hostname", get_host_info()[0])
+        display.image(fb_image, 90)
     elif mode == "TEMP":
         v = "{:.0f}°".format(packet["F"])
-        draw_single_value(v, (.75, .75, .75), "Temp", "F")
+        draw_single_value(fb_draw, v, (.75, .75, .75), "Temp", "F")
+        display.image(fb_image, 90)
     elif mode == "RHUM":
         rh = packet["H"]
         v = "{:.0f}%".format(rh)
         off = rh / 100.0 * 0.25
-        draw_single_value(v, (.75, .75 + off, .75 + off), "Humidity", "Rel")
+        draw_single_value(fb_draw, v, (.75, .75 + off, .75 + off), "Humidity", "Rel")
+        display.image(fb_image, 90)
+    elif mode == "GAS":
+        ohms = packet["Gas"]
+        rh   = packet["H"]
+        iaq  = math.log(ohms) + 0.04 * rh
+        v    = "{:.0f}".format(iaq)
+        draw_single_value(fb_draw, v, (0.0, 0.0, 1.0), "Gas", "IAQ")
+        display.image(fb_image, 90)
     elif mode == "CPU":
         info = get_cpu_info()
-        draw_message(str(info[2]) + " Cores", str(info[0]) + "% | " + str(info[1]) + "%")
+        draw_message(fb_draw, str(info[2]) + " Cores", str(info[0]) + "% | " + str(info[1]) + "%")
+        display.image(fb_image, 90)
     else:
         draw_clear()
 
 if __name__ == '__main__':
-    draw_single_value(163, (1.0, 0.0, 0.0), "Sure", "test", 0.0)
+    draw_single_value(fb_draw, 163, (1.0, 0.0, 0.0), "Sure", "test", 0.0)
+    display.image(fb_image, 90)
 
 
 
