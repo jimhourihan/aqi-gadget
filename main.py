@@ -28,11 +28,12 @@ def signal_handler (sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
-stop_flag      = False
-use_display    = aqi_gadget_config.use_mini_tft
-use_env_sensor = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme680_sensor
-use_web_server = aqi_gadget_config.use_web_server
-is_usb_gadget  = check_usb_gadget_attached()
+stop_flag       = False
+use_display     = aqi_gadget_config.use_mini_tft
+use_env_sensor  = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme680_sensor
+use_web_server  = aqi_gadget_config.use_web_server
+is_usb_gadget   = check_usb_gadget_attached()
+blank_time_secs = aqi_gadget_config.screen_blank_secs
 
 def dht_loop (out_queue, control_queue):
     import dht_service
@@ -48,7 +49,7 @@ def dht_loop (out_queue, control_queue):
                 break
         else:
             pass
-        time.sleep(1)
+        time.sleep(aqi_gadget_config.env_polling_secs)
     dht_service.stop()
 
 def bme680_loop (out_queue, control_queue):
@@ -65,7 +66,7 @@ def bme680_loop (out_queue, control_queue):
                 break
         else:
             pass
-        time.sleep(1)
+        time.sleep(aqi_gadget_config.env_polling_secs)
     bme680_service.stop()
 
 def env_loop (out_queue, control_queue):
@@ -96,7 +97,9 @@ def pm25_loop (out_queue, control_queue):
 def display_loop (output_queue):
     print("INFO: [aqi] display loop started")
     import tft_display
-    modes          = ["AQI", "RAW", "GAS", "TEMP", "RHUM", "HOST", "IP"]
+    modes          = [["EPA_AQI25", "EPA_AQI10", "TEMP", "RHUM"],
+                      "EPA_AQI25", "EPA_AQI10", "RAW25", "RAW10",
+                      "TEMP", "RHUM", "GAS", "HOST", "IP"]
     mode_index     = 0
     stop           = False
     backlight_time = time.time()
@@ -118,7 +121,7 @@ def display_loop (output_queue):
             output_state.update(item)
             item = output_queue.get()
 
-        if backlight and (t - backlight_time) > 60.0:
+        if backlight and (t - backlight_time) > blank_time_secs:
             tft_display.set_backlight(False)
             tft_display.draw_clear()
             backlight = False
@@ -131,7 +134,6 @@ def display_loop (output_queue):
             if light:
                 if item == 1:
                     mode_index = (mode_index + 1) % len(modes)
-                    tft_display.set_mode(modes[mode_index])
                     backlight_time = t                          # reset backlight timer
                     packet = last_packet                        # immediately update
                 elif item == 2 or item == 16:
@@ -153,7 +155,7 @@ def display_loop (output_queue):
             time.sleep(0.2)
             pass
         else:
-            tft_display.draw_packet(output_state)
+            tft_display.draw_packet(modes[mode_index], output_state)
             last_packet = packet
 
     tft_display.draw_off()

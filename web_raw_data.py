@@ -13,6 +13,147 @@ server_name   = "localhost"
 packet_buffer = []
 max_packets   = 100
 
+settingshtml = Template("""
+<style>
+
+  body {
+      background: #bbbbbb;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 3vw;
+      margin-top: 1em;
+      margin-left: 2em;
+      margin-right: 2em;
+  }
+
+  ::selection {
+      background: cornsilk;
+  }
+
+  table {
+      width: 80%;
+      font-size: 2.5vw;
+  }
+
+  input { font-size: 2.5vw; }
+  button { font-size: 2.5vw; }
+  select { font-size: 2.5vw; }
+  option { font-size: 2.5vw; }
+
+  .slogan {
+      font-size: 10pt;
+      font-style: italic;
+  }
+
+</style>
+
+<html>
+  <body>
+    <h2>AQI Gadget Settings</h2>
+
+    <hr>
+
+    <form id="wifi">
+      <table>
+        <th align="left">WiFi</th>
+        <tr>
+          <td width="40%"  align="right">
+            <label>Network Name:</label><br>
+          </td>
+          <td>
+            <input type="text" name="network" id="network" value=""><br>
+          </td>
+          <td align="left">
+          </td>
+        </tr>
+        <tr>
+          <td width="40%"  align="right">
+            <label>Password:</label>
+          </td>
+          <td>
+            <input type="text" name="password" id="password" value="">
+          </td>
+          <td align="left">
+            <button type="submit" form="wifi"
+                    formaction="http://aqi-gadget-001.local:8080/set-wifi">Save</button>
+          </td>
+        </tr>
+      </table>
+    </form>
+
+    <hr>
+
+    <form id="other">
+    <table>
+        <th align="left">Localization</th>
+        <tr>
+            <td width="40%" align="right">
+              <label>Country:</label>
+            </td>
+            <td>
+              <select name="country" id="country">
+                <option value="US">US</option>
+                <option value="IN">India</option>
+              </select>
+            </td>
+            <td>
+        </tr>
+        
+        <tr>
+            <td width="40%" align="right">
+              <label>Temperature Units:</label>
+            </td>
+            <td>
+              <select name="temp" id="temp">
+                <option value="C">Celcius</option>
+                <option value="F">Farenheit</option>
+              </select>
+            </td>
+        </tr>
+    </table>
+
+    <br>
+
+      <table>
+        <th align="left">Calibration</th>
+        <tr>
+          <td width="40%" align="right">
+            <label>Particle Type:</label><br>
+          </td>
+          <td>
+            <select name="particle" id="particle">
+              <option value="wood">Wood Smoke (EPA)</option>
+              <option value="standard">Industrial / Vehicle</option>
+            </select><br>
+          </td>
+          <td>
+          </td>
+        </tr>
+        <tr>
+          <td width="40%" align="right">
+            <label>Temperature Offset:</label>
+          </td>
+          <td>
+            <input type="text" name="offset" id="offset" value="-1.5">
+          </td>
+          <td>
+            <button type="submit" form="other"
+                    formaction="http://aqi-gadget-001.local:8080/set_general">Save</button>
+          </td>
+        </tr>
+      </table>
+    </form>
+
+    <hr>
+
+    <br>
+    <div class="slogan">
+    Another Fine Product of Cheez Grits (TM)
+    </div>
+
+  </body>
+</html>
+""")
+
 envhtml = Template("""
 <style>
 .centered {
@@ -200,6 +341,20 @@ class RawDataServer (object):
                     self.env_value = v
 
     @cherrypy.expose
+    def settings (self):
+        return settingshtml.substitute({})
+
+    @cherrypy.expose
+    def set_wifi (self, network="network", password="password"):
+        print("INFO: set_wifi:", network, password)
+        return "OK"
+
+    @cherrypy.expose
+    def set_general (self, country="US", temp="F", particle="wood", offset="-1.5"):
+        print("INFO: set_general:", country, temp, particle, offset)
+        return "OK"
+
+    @cherrypy.expose
     def raw (self):
         val = {**self.env_value, **self.pm_value}
         return str(val)
@@ -227,8 +382,8 @@ class RawDataServer (object):
         c          = self.pm_value["pm25_15s"]
         h          = self.env_value["H"]
         t          = self.pm_value["time"]
-        aqi        = aqi_from_concentration(EPA_correction(c, h))
-        b_aqi      = aqi_from_concentration(c)[0]
+        aqi        = aqi_from_concentration(EPA_25_correction(c, h), 2.5, "US")
+        b_aqi      = aqi_from_concentration(c, 2.5, "US")[0]
         b_temp     = self.env_value["F"]
         b_hum      = h
         b_con      = c
@@ -247,7 +402,7 @@ class RawDataServer (object):
         keys = {
             "MAINVALUE" : aqi[0],
             "MAINLABEL" : "Native AQI",
-            "VALUE0" : aqi_from_concentration(EPA_correction(c, self.env_value["H"])),
+            "VALUE0" : aqi_from_concentration(EPA_25_correction(c, self.env_value["H"]), 2.5, "US"),
             "VALUE1" : "{:.0f}".format(b_con),
             "VALUE2" : "{:.1f}°".format(b_temp),
             "VALUE3" : "{:.0f}%".format(b_hum),
@@ -287,22 +442,22 @@ class RawDataServer (object):
     def epa (self, refresh=100000):
         c = self.pm_value["pm25_15s"]
         h = self.env_value["H"]
-        epa = aqi_from_concentration(EPA_correction(c, h))
-        native = aqi_from_concentration(c)
+        epa = aqi_from_concentration(EPA_25_correction(c, h), 2.5, "US")
+        native = aqi_from_concentration(c, 2.5, "US")
         rgb = epa[2]
         lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
         bg = to_html_color(rgb)
         fg = to_html_color( (0, 0, 0) if lum > .25 else (.8, .8, .8) )
         keys = {
             "MAINVALUE" : str(epa[0]),
-            "MAINLABEL" : "EPA AQI",
+            "MAINLABEL" : "US EPA AQI",
             "DESC" : epa[1],
             "REFRESH" : refresh,
             "VALUE0" : str(native[0]),
             "LABEL0" : "Native AQI",
             "TARGET0" : "native",
             "BGCOLOR0" : to_html_color(native[2]),
-            "VALUE1" : int(EPA_correction(c, h)),
+            "VALUE1" : int(EPA_25_correction(c, h)),
         }
         return self.big_aqi(keys)
 
@@ -310,8 +465,8 @@ class RawDataServer (object):
     def native (self, refresh=100000):
         c = self.pm_value["pm25_15s"]
         h = self.env_value["H"]
-        epa = aqi_from_concentration(EPA_correction(c, h))
-        native = aqi_from_concentration(c)
+        epa = aqi_from_concentration(EPA_25_correction(c, h), 2.5, "US")
+        native = aqi_from_concentration(c, 2.5, "US")
         rgb = native[2]
         lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
         bg = to_html_color(rgb)
@@ -324,7 +479,7 @@ class RawDataServer (object):
             "DESC" : native[1],
             "REFRESH" : refresh,
             "VALUE0" : str(epa[0]),
-            "LABEL0" : "EPA AQI",
+            "LABEL0" : "US EPA AQI",
             "TARGET0" : "epa",
             "BGCOLOR0" : to_html_color(epa[2]),
             "VALUE1" : int(c),

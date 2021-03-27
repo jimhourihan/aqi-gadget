@@ -36,6 +36,11 @@ def read_packet ():
     h        = sensor.humidity * h_factor
     mbars    = sensor.pressure
 
+    d = time.time() - start_time
+    if d < 300:
+        # too early if under 5 mins after start up
+        gas = "{} min wait".format(int(5 - d/60) + 1)
+
     #print("{:.1f}".format(t - start_time), gas, "{:.1f}".format(h), "{:.1f}".format(tempC), "{:.1f}".format(mbars), sep=',')
 
     return {

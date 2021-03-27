@@ -5,6 +5,7 @@ from adafruit_rgb_display.rgb import color565
 import adafruit_rgb_display.st7789 as st7789
 import subprocess
 import functools
+import aqi_gadget_config
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
@@ -32,15 +33,16 @@ display = st7789.ST7789( board.SPI(),
 backlight = digitalio.DigitalInOut(board.D22)
 backlight.switch_to_output()
 
-mode        = "AQI"
-bfont       = ImageFont.truetype(ttf_file, 80)
-tfont       = ImageFont.truetype(ttf_file, 24)
-mfont       = None
-width       = display.height # rotated
-height      = display.width
-fb_image    = Image.new('RGB', (width, height))
-fb_draw     = ImageDraw.Draw(fb_image)
-blank_image = None
+mode         = "AQI"
+bfont        = ImageFont.truetype(ttf_file, 80)
+tfont        = ImageFont.truetype(ttf_file, 22)
+mfont        = None
+width        = display.height # rotated
+height       = display.width
+fb_image     = Image.new('RGB', (width, height))
+fb_draw      = ImageDraw.Draw(fb_image)
+blank_image  = None
+output_state = {} # combined packet
 
 def init_blank (blank_type = 'AQI'):
     global blank_image
@@ -86,10 +88,19 @@ def draw_single_value (out_draw, value, rgb, level, scale_name, delta=None):
     t = out_draw.textsize(scale_name, font=tfont)
     p = out_draw.textsize("+", font=bfont)
     w = out_draw.textsize(level, font=tfont)
+
+    small = s[0] > 235
+    if small:
+        global mfont
+        if mfont == None:
+            mfont = ImageFont.truetype(ttf_file, 30)
+        s = out_draw.textsize(str(value), font=mfont)
+
     xmargin = 10 if delta != None else 0
     (sx, sy) = ((width - s[0]) / 2.0 - xmargin, (height - s[1]) / 2.0 - 20)
     (tx, ty) = (width - t[0] - 10, height - t[1] - 6)
-    out_draw.text( (sx, sy), str(value), font=bfont, fill=value_fg)
+
+    out_draw.text( (sx, sy), str(value), font=(mfont if small else bfont), fill=value_fg)
     out_draw.text( (tx, ty), scale_name, font=tfont, fill=value_fg)
     out_draw.text( (10, ty), level, font=tfont, fill=value_fg)
 
@@ -151,53 +162,118 @@ def get_cpu_info ():
     num_procs = float(len(list(procs)))
     return (int(cpu_total / num_procs), int(cpu_max), int(num_procs))
 
-def draw_packet (packet):
-    global mode
+def draw_packet_into (mode, packet, draw_obj, image_obj):
     converter = None
-    if mode == "AQI":
-        converter = lambda x: aqi_util.EPA_correction(x, 60.0)
-    elif mode == "NativeAQI":
+    if mode == "EPA_AQI25":
+        converter = aqi_util.EPA_25_correction
+        name = "2.5µm"
+        key1 = "pm25_15s"
+        key2 = "pm25_delta"
+        part_size = 2.5
+        co = "US"
+
+    elif mode == "EPA_AQI10":
+        converter = aqi_util.EPA_10_correction
+        name = "10µm"
+        key1 = "pm10_15s"
+        key2 = "pm10_delta"
+        part_size = 10.0
+        co = "US"
+
+    elif mode == "BASE_US_AQI25":
         converter = lambda x: x
+        name = "2.5µm"
+        key1 = "pm25_15s"
+        key2 = "pm25_delta"
+        part_size = 2.5
+        co = "US"
+
+    elif mode == "BASE_US_AQI10":
+        converter = lambda x: x
+        name = "10µm"
+        key1 = "pm10_15s"
+        key2 = "pm10_delta"
+        part_size = 10.0
+        co = "US"
 
     if converter:
-        (aqi, level, rgb) = aqi_util.aqi_from_concentration(converter(packet["pm25_15s"]))
-        delta = packet["pm25_delta"]
-        draw_single_value(fb_draw, aqi, rgb, level, mode, delta)
-        display.image(fb_image, 90)
-    elif mode == "RAW":
+        (aqi, level, rgb) = aqi_util.aqi_from_concentration(converter(packet[key1], packet["H"]), part_size, co)
+        delta = packet[key2]
+        draw_single_value(draw_obj, aqi, rgb, level, name, delta)
+
+    elif mode == "RAW25":
         v = "{:.0f}".format(packet["pm25_15s"])
         delta = packet["pm25_delta"]
-        draw_single_value(fb_draw, v, (.20, .20, .20), "Conc", "µg/m^3", delta)
-        display.image(fb_image, 90)
+        draw_single_value(draw_obj, v, (.20, .20, .20), "pm2.5 Conc", "µg/m^3", delta)
+
+    elif mode == "RAW10":
+        v = "{:.0f}".format(packet["pm10_15s"])
+        delta = packet["pm10_delta"]
+        draw_single_value(draw_obj, v, (.20, .20, .20), "pm10 Conc", "µg/m^3", delta)
+
     elif mode == "IP":
-        draw_message(fb_draw, "IP Address", get_host_info()[1])
-        display.image(fb_image, 90)
+        draw_message(draw_obj, "IP Address", get_host_info()[1])
+
     elif mode == "HOST":
-        draw_message(fb_draw, "Hostname", get_host_info()[0])
-        display.image(fb_image, 90)
+        draw_message(draw_obj, "Hostname", get_host_info()[0])
+
     elif mode == "TEMP":
-        v = "{:.0f}°".format(packet["F"])
-        draw_single_value(fb_draw, v, (.75, .75, .75), "Temp", "F")
-        display.image(fb_image, 90)
+        units = "F" if aqi_gadget_config.use_fahrenheit else "C"
+        v = "{:.0f}°".format(packet[units])
+        draw_single_value(draw_obj, v, (.75, .75, .75), "Temp", units) 
+
     elif mode == "RHUM":
         rh = packet["H"]
         v = "{:.0f}%".format(rh)
         off = rh / 100.0 * 0.25
-        draw_single_value(fb_draw, v, (.75, .75 + off, .75 + off), "Humidity", "Rel")
-        display.image(fb_image, 90)
+        draw_single_value(draw_obj, v, (.75, .75 + off, .75 + off), "Humidity", "Rel")
+
     elif mode == "GAS":
         ohms = packet["Gas"]
         rh   = packet["H"]
-        iaq  = math.log(ohms) + 0.04 * rh
-        v    = "{:.0f}".format(iaq)
-        draw_single_value(fb_draw, v, (0.0, 0.0, 1.0), "Gas", "IAQ")
-        display.image(fb_image, 90)
+        v = None
+        if type(ohms) == str:
+            v = ohms
+        else:
+            #iaq  = math.log(ohms) + 0.04 * rh
+            iaq  = ohms / 1000.0
+            v    = "{:.0f}".format(iaq)
+        draw_single_value(draw_obj, v, (0.0, 0.0, 1.0), "Gas", "IAQ")
+
     elif mode == "CPU":
         info = get_cpu_info()
-        draw_message(fb_draw, str(info[2]) + " Cores", str(info[0]) + "% | " + str(info[1]) + "%")
-        display.image(fb_image, 90)
+        draw_message(draw_obj, str(info[2]) + " Cores", str(info[0]) + "% | " + str(info[1]) + "%")
+
+    elif type(mode) == type([]) and len(mode) == 4:
+        # top left
+        draw_packet_into (mode[0], packet, draw_obj, image_obj)
+        tl_image = image_obj.resize((width//2, height//2), Image.BOX)
+
+        # bot left
+        draw_packet_into (mode[1], packet, draw_obj, image_obj)
+        bl_image = image_obj.resize((width//2, height//2), Image.BOX)
+
+        # top right
+        draw_packet_into (mode[2], packet, draw_obj, image_obj)
+        tr_image = image_obj.resize((width//2, height//2), Image.BOX)
+
+        # bot right
+        draw_packet_into (mode[3], packet, draw_obj, image_obj)
+        br_image = image_obj.resize((width//2, height//2), Image.BOX)
+
+        # comp
+        image_obj.paste(tl_image, (0,0))
+        image_obj.paste(bl_image, (0,height//2))
+        image_obj.paste(tr_image, (width//2,0))
+        image_obj.paste(br_image, (width//2,height//2))
     else:
-        draw_clear()
+        pass
+
+def draw_packet (mode, packet):
+    global output_state
+    output_state.update(packet)
+    draw_packet_into (mode, output_state, fb_draw, fb_image)
+    display.image(fb_image, 90)
 
 if __name__ == '__main__':
     draw_single_value(fb_draw, 163, (1.0, 0.0, 0.0), "Sure", "test", 0.0)
