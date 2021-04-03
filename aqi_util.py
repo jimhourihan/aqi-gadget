@@ -14,6 +14,16 @@ def EPA_25_correction (c, rh):
 def EPA_10_correction (c, rh):
     return c
 
+def aqi_correction_func (name):
+    if name == 'EPA':
+        return EPA_25_correction
+    elif name == 'AQandU':
+        return lambda c,h: AQandU_25_correction(c)
+    elif name == 'LRAPA':
+        return lambda c,h: LRAPA_25_correction(c)
+    else:
+        return lambda c,h: c
+
 def rgb_shade_from_aqi (aqi):
     if aqi < 50:
         u = aqi / 50.0

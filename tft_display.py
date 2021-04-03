@@ -211,6 +211,10 @@ def draw_packet_into (mode, packet, draw_obj, image_obj):
         delta = packet["pm10_delta"]
         draw_single_value(draw_obj, v, (.20, .20, .20), "pm10 Conc", "µg/m^3", delta)
 
+    elif mode == "MBARS":
+        v = "{:.0f}".format(packet["hPa"])
+        draw_single_value(draw_obj, v, (.70, .85, 1.00), "Pressure", "mbar", None)
+
     elif mode == "IP":
         draw_message(draw_obj, "IP Address", get_host_info()[1])
 

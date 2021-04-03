@@ -6,11 +6,10 @@ import sys
 import os
 import setproctitle
 from multiprocessing import Process, Queue
-import web_raw_data 
 import aqi_util
 import urllib.request
 import systemd.daemon
-
+import system_tools
 
 def check_usb_gadget_attached ():
     with open("/sys/devices/platform/soc/20980000.usb/udc/20980000.usb/state", 'r') as file:
@@ -34,6 +33,10 @@ use_env_sensor  = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme6
 use_web_server  = aqi_gadget_config.use_web_server
 is_usb_gadget   = check_usb_gadget_attached()
 blank_time_secs = aqi_gadget_config.screen_blank_secs
+
+def web_start (cmd_queue, data_queue, ipaddress, port, machine):
+    import web_raw_data
+    web_raw_data.start(cmd_queue, data_queue, ipaddress, port, machine)
 
 def dht_loop (out_queue, control_queue):
     import dht_service
@@ -97,9 +100,7 @@ def pm25_loop (out_queue, control_queue):
 def display_loop (output_queue):
     print("INFO: [aqi] display loop started")
     import tft_display
-    modes          = [["EPA_AQI25", "EPA_AQI10", "TEMP", "RHUM"],
-                      "EPA_AQI25", "EPA_AQI10", "RAW25", "RAW10",
-                      "TEMP", "RHUM", "GAS", "HOST", "IP"]
+    modes          = aqi_gadget_config.display_modes
     mode_index     = 0
     stop           = False
     backlight_time = time.time()
@@ -181,7 +182,7 @@ def run ():
     root = (os.getuid() == 0)
 
     # Choose which interface to put web server on
-    (machine, ipaddresses) = web_raw_data.get_host_info()
+    (machine, ipaddresses) = system_tools.get_host_info()
 
     if len(ipaddresses) > 0:
         if is_usb_gadget:
@@ -214,7 +215,7 @@ def run ():
         setproctitle.setproctitle("aqi: web process")
         web_command_queue = Queue()
         web_data_queue    = Queue()
-        web_process       = Process(target=web_raw_data.start,
+        web_process       = Process(target=web_start,
                                     name="web_server",
                                     args = (web_command_queue,
                                             web_data_queue,
