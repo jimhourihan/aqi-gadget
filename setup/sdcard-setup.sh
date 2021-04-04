@@ -37,6 +37,7 @@ if [ -d "$boot_path" ]; then
     cp pi-config-after-boot.sh $boot_path
     cp make-usb-gadget $boot_path
     cp storage.fat32.dmg.gz $boot_path
+    cp ../aqi_gadget_config.ini $boot_path
     cd $boot_path
 else
     echo "ERROR: $boot_path does not exist"
