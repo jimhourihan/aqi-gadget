@@ -20,11 +20,11 @@ last_sample_time = 0.0
 avg_1m_pm25      = 0
 avg_15s_pm25     = 0
 avg_delta_pm25   = 0
-avg_1m_pm10      = 0
-avg_15s_pm10     = 0
-avg_delta_pm10   = 0
+avg_1m_pm100     = 0
+avg_15s_pm100    = 0
+avg_delta_pm100  = 0
 pm25_buffer      = []
-pm10_buffer      = []
+pm100_buffer     = []
 
 def not_a_result (msg):
     return (0, 0, 0, msg)
@@ -75,12 +75,18 @@ def emulate_read_packet ():
     return {
         "pm25" : pm25,
         "pm25_1m" : avg_1m_pm25,
-        "pm10" : pm25,
-        "pm10_1m" : avg_1m_pm25,
+        "pm100" : pm25,
+        "pm100_1m" : avg_1m_pm25,
         "pm25_15s" : avg_15s_pm25,
         "pm25_delta" : avg_delta_pm25,
-        "pm10_15s" : avg_15s_pm25,
-        "pm10_delta" : avg_delta_pm25,
+        "pm100_15s" : avg_15s_pm25,
+        "pm100_delta" : avg_delta_pm25,
+        "pm03_count" : 10,
+        "pm05_count" : 20,
+        "pm10_count" : 30,
+        "pm25_count" : 40,
+        "pm50_count" : 0,
+        "pm100_count" : 0,
         "time" : current_time,
         "status" : "OK",
     }
@@ -93,7 +99,7 @@ def read_packet ():
     global avg_1m_pm25
     global avg_15s_pm25
     global pm25_buffer
-    global pm10_buffer
+    global pm100_buffer
     global last_sample_time
     global avg_delta_pm25
 
@@ -117,8 +123,8 @@ def read_packet ():
 
     pm25_std    = aqdata["pm25 standard"]
     pm25_env    = aqdata["pm25 env"]
-    pm10_std    = aqdata["pm10 standard"]
-    pm10_env    = aqdata["pm10 env"]
+    pm100_std   = aqdata["pm100 standard"]
+    pm100_env   = aqdata["pm100 env"]
     pm03_count  = aqdata["particles 03um"]
     pm05_count  = aqdata["particles 05um"]
     pm10_count  = aqdata["particles 10um"]
@@ -131,14 +137,14 @@ def read_packet ():
     #else:
     last_sample_time = sample_time
     pm25_buffer.append((pm25_std, sample_time))
-    pm10_buffer.append((pm10_std, sample_time))
+    pm100_buffer.append((pm100_std, sample_time))
 
     #while len(pm25_buffer) > 27:
     while len(pm25_buffer) > 6:
         pm25_buffer.pop(0)
 
-    while len(pm10_buffer) > 6:
-        pm10_buffer.pop(0)
+    while len(pm100_buffer) > 6:
+        pm100_buffer.pop(0)
 
     avg_1m_pm25 = 0
     avg_15s_pm25 = 0
@@ -152,17 +158,17 @@ def read_packet ():
     avg_15s_pm25 /= count
     avg_delta_pm25 = pm25_std - avg_15s_pm25
 
-    avg_1m_pm10 = 0
-    avg_15s_pm10 = 0
+    avg_1m_pm100 = 0
+    avg_15s_pm100 = 0
     count = 0
-    for (pm10_samp, time_samp) in reversed(pm10_buffer):
-        avg_1m_pm10 += pm10_samp
+    for (pm100_samp, time_samp) in reversed(pm100_buffer):
+        avg_1m_pm100 += pm100_samp
         if count < 6:
-            avg_15s_pm10 += pm10_samp
+            avg_15s_pm100 += pm100_samp
             count = count + 1
-    avg_1m_pm10 /= len(pm10_buffer)
-    avg_15s_pm10 /= count
-    avg_delta_pm10 = pm10_std - avg_15s_pm10
+    avg_1m_pm100 /= len(pm100_buffer)
+    avg_15s_pm100 /= count
+    avg_delta_pm100 = pm100_std - avg_15s_pm100
 
     #print(str(pm25_buffer))
 
@@ -171,8 +177,8 @@ def read_packet ():
     return {
         "pm25" : pm25_std,
         "pm25_env" : pm25_env,
-        "pm10" : pm10_std,
-        "pm10_env" : pm10_env,
+        "pm100" : pm100_std,
+        "pm100_env" : pm100_env,
         "pm03_count" : pm03_count,
         "pm05_count" : pm05_count,
         "pm10_count" : pm10_count,
@@ -182,8 +188,8 @@ def read_packet ():
         #"pm25_1m" : avg_1m_pm25,
         "pm25_15s" : avg_15s_pm25,
         "pm25_delta" : avg_delta_pm25,
-        "pm10_15s" : avg_15s_pm10,
-        "pm10_delta" : avg_delta_pm10,
+        "pm100_15s" : avg_15s_pm100,
+        "pm100_delta" : avg_delta_pm100,
         "time" : sample_time,
         "status" : "OK",
     }

@@ -683,12 +683,11 @@ class RawDataServer (object):
         count      = tcount if tcount < 1000 else str(int(tcount/1000.0)) + "k"
         h          = self.env_value["H"]
         t          = self.pm_value["time"]
-        aqi        = aqi_from_concentration(EPA_25_correction(c, h), 2.5, "US")
-        b_aqi      = aqi_from_concentration(c, 2.5, "US")[0]
+        correction = aqi_correction_func(aqi_gadget_config.aqi_function)
+        aqi        = aqi_from_concentration(correction(c, h), 2.5, aqi_gadget_config.aqi_type)
         b_temp     = self.env_value['F' if aqi_gadget_config.use_fahrenheit else 'C']
         b_hum      = h
         b_con      = c
-        b_aqi_rgb  = rgb_shade_from_aqi(b_aqi)
         b_temp_rgb = (1, .8, .8)
         b_hum_rgb  = (.8, .8, 1.0)
         b_con_rgb  = (.85, .85, .85)

@@ -26,9 +26,9 @@ screen_blank_secs   = 600
 env_polling_secs    = 15
 
 # default display modes
-default_display_modes = [["EPA_AQI25", "EPA_AQI10", "TEMP", "RHUM"],
-                         "EPA_AQI25", "EPA_AQI10", "RAW25", "RAW10",
-                         "TEMP", "RHUM", "MBARS", "GAS", "HOST", "IP"]
+default_display_modes = [["AQI", "RAW25", "TEMP", "RHUM"],
+                         "AQI", "RAW25", "TEMP", "RHUM", "MBARS", "GAS",
+                         ["HOST", "IP", "AQITYPE", "AQIFUNC"]]
 
 display_modes = default_display_modes
 

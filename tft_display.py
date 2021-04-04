@@ -164,41 +164,29 @@ def get_cpu_info ():
 
 def draw_packet_into (mode, packet, draw_obj, image_obj):
     converter = None
-    if mode == "EPA_AQI25":
-        converter = aqi_util.EPA_25_correction
-        name = "2.5µm"
-        key1 = "pm25_15s"
-        key2 = "pm25_delta"
-        part_size = 2.5
-        co = "US"
 
-    elif mode == "EPA_AQI10":
-        converter = aqi_util.EPA_10_correction
-        name = "10µm"
-        key1 = "pm10_15s"
-        key2 = "pm10_delta"
-        part_size = 10.0
-        co = "US"
-
-    elif mode == "BASE_US_AQI25":
-        converter = lambda x: x
-        name = "2.5µm"
-        key1 = "pm25_15s"
-        key2 = "pm25_delta"
-        part_size = 2.5
-        co = "US"
-
-    elif mode == "BASE_US_AQI10":
-        converter = lambda x: x
-        name = "10µm"
-        key1 = "pm10_15s"
-        key2 = "pm10_delta"
-        part_size = 10.0
-        co = "US"
-
+    if mode == 'AQI' or mode[:4] == 'AQI ':
+        parts = mode.split()
+        psize = '*' if len(parts) < 2 else parts[1]
+        aqitype = '*' if len(parts) < 3 else parts[2]
+        aqifunc = '*' if len(parts) < 4 else parts[3]
+        (name, key1, key2) = ("2.5µm", "pm25_15s", "pm25_delta")
+        co = aqitype
+        if psize == '25' or psize == '*':
+            pass
+        elif psize == '100':
+            (name, key1, key2) = ("10µm", "pm100_15s", "pm100_delta")
+        if co == '*':
+            co = aqi_gadget_config.aqi_type
+        if aqifunc == '*':
+            aqifunc = aqi_gadget_config.aqi_function
+        converter = aqi_util.aqi_correction_func(aqifunc)
+                
     if converter:
-        (aqi, level, rgb) = aqi_util.aqi_from_concentration(converter(packet[key1], packet["H"]), part_size, co)
+        (aqi, level, rgb) = aqi_util.aqi_from_concentration(converter(packet[key1], packet["H"]), psize, co)
         delta = packet[key2]
+        if len(level) > 14:
+            level = level[:14]
         draw_single_value(draw_obj, aqi, rgb, level, name, delta)
 
     elif mode == "RAW25":
@@ -206,9 +194,9 @@ def draw_packet_into (mode, packet, draw_obj, image_obj):
         delta = packet["pm25_delta"]
         draw_single_value(draw_obj, v, (.20, .20, .20), "pm2.5 Conc", "µg/m^3", delta)
 
-    elif mode == "RAW10":
-        v = "{:.0f}".format(packet["pm10_15s"])
-        delta = packet["pm10_delta"]
+    elif mode == "RAW100":
+        v = "{:.0f}".format(packet["pm100_15s"])
+        delta = packet["pm100_delta"]
         draw_single_value(draw_obj, v, (.20, .20, .20), "pm10 Conc", "µg/m^3", delta)
 
     elif mode == "MBARS":
@@ -220,6 +208,12 @@ def draw_packet_into (mode, packet, draw_obj, image_obj):
 
     elif mode == "HOST":
         draw_message(draw_obj, "Hostname", get_host_info()[0])
+
+    elif mode == "AQITYPE":
+        draw_message(draw_obj, "AQI Type", aqi_util.aqi_type_description[aqi_gadget_config.aqi_type])
+
+    elif mode == "AQIFUNC":
+        draw_message(draw_obj, "PM25 Calibration", aqi_gadget_config.aqi_function)
 
     elif mode == "TEMP":
         units = "F" if aqi_gadget_config.use_fahrenheit else "C"
