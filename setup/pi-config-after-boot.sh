@@ -134,7 +134,7 @@ pip3 install CherryPy pillow numpy
 # ro sdcard setup
 # Replace log management with busybox (use logread if needed)
 # Installing ntp and busybox-syslogd...
-apt-get -y --force-yes install ntp busybox-syslogd; dpkg --purge rsyslog
+apt-get -y install ntp busybox-syslogd; dpkg --purge rsyslog
 
 # Add fastboot, noswap and/or ro to end of /boot/cmdline.txt
 append2 /boot/cmdline.txt fastboot fastboot
