@@ -12,8 +12,10 @@ if [ "$CURRENTNAME" = "$TARGETNAME" ]; then
    HOSTNAME_UPDATE=NO
 else
    HOSTNAME_UPDATE=YES
+   mount -o remount,rw /
    echo $TARGETNAME > /etc/hostname
    sed --in-place=bak "s/$CURRENTNAME/$TARGETNAME/" /etc/hosts
+   mount -o remount,ro /
 fi
 
 cd /sys/kernel/config/usb_gadget
