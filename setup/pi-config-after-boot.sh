@@ -6,7 +6,7 @@ if [ $(id -u) -ne 0 ]; then
 fi
 
 cd /boot
-tarfile=$(echo aqi-gadget-release.*.tar.gz)
+tarfile=$(echo aqi-gadget-release-*.tar.gz)
 echo Using $tarfile
 
 # Given a filename, a regex pattern to match and a replacement string:
@@ -62,10 +62,6 @@ apt-get install busybox-syslogd -y
 apt-get remove --purge rsyslog -y
 apt-get remove -y --purge triggerhappy logrotate dphys-swapfile fake-hwclock
 apt-get -y autoremove --purge
-
-# move the 100MB image file into place and decompress it
-mv storage.fat32.dmg.gz /
-gunzip /storage.fat32.dmg.gz
 
 cat > /boot/aqi-gadget-info <<EOF
 serial_number 000

@@ -36,7 +36,7 @@ read -p "Path to /boot: " boot_path
 echo "Where is the aqi-gadget-release...tar.gz file?"
 read -p "Path to release source tar.gz: " release_path
 
-if [ -d "$release_path" ]; then
+if [ -f "$release_path" ]; then
     echo
 else
     echo "ERROR: no release tar file there"
