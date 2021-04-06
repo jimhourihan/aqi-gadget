@@ -16,6 +16,7 @@ else
    echo $TARGETNAME > /etc/hostname
    sed --in-place=bak "s/$CURRENTNAME/$TARGETNAME/" /etc/hosts
    mount -o remount,ro /
+   reboot now
 fi
 
 cd /sys/kernel/config/usb_gadget
