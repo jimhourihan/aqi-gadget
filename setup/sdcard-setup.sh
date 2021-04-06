@@ -33,11 +33,19 @@ replaceAppend() {
 echo "Where is the SD card /boot directory mounted? (e.g. /Volumes/boot on MacOS)"
 read -p "Path to /boot: " boot_path
 
+echo "Where is the aqi-gadget-release...tar.gz file?"
+read -p "Path to release source tar.gz: " release_path
+
+if [ -d "$release_path" ]; then
+    echo
+else
+    echo "ERROR: no release tar file there"
+    exit -1
+fi
+
 if [ -d "$boot_path" ]; then
     cp pi-config-after-boot.sh $boot_path
-    cp make-usb-gadget $boot_path
-    cp storage.fat32.dmg.gz $boot_path
-    cp ../aqi_gadget_config.ini $boot_path
+    cp $release_path $boot_path
     cd $boot_path
 else
     echo "ERROR: $boot_path does not exist"

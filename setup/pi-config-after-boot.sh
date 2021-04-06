@@ -5,6 +5,10 @@ if [ $(id -u) -ne 0 ]; then
 	exit 1
 fi
 
+cd /boot
+tarfile=$(echo aqi-gadget-release.*.tar.gz)
+echo Using $tarfile
+
 # Given a filename, a regex pattern to match and a replacement string:
 # Replace string if found, else no change.
 # (# $1 = filename, $2 = pattern to match, $3 = replacement)
@@ -99,7 +103,6 @@ denyinterfaces usb0
 noipv4ll
 EOF
 
-chmod +x /boot/make-usb-gadget
 
 cat > /etc/systemd/system/create-usb-gadgets.service <<EOF
 [Unit]
@@ -188,6 +191,14 @@ PROMPT_COMMAND=set_bash_prompt
 EOF
 
 chown pi:pi ~pi/.bashrc
+
+mv $tarfile ~pi/
+cd ~pi
+tar -xvzf $tarfile
+cd "${tarfile:0:-7}" 
+bash install.sh
+cd ~pi
+chown -R pi:pi *
 
 echo "Set up complete -- file system will be read-only"
 echo "Edit aqi-gadget-info and reboot"
