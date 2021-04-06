@@ -1,6 +1,25 @@
 import subprocess
 import time
 
+class WriteCapability:
+    """A Context Manager that switches the file system to RW
+    does something then returns it to RO
+    """
+
+    def __init__ (self):
+        pass
+
+    def __enter__ (self):
+        subprocess.run('sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot', shell=True)
+        return self
+
+    def __exit__ (self, *args):
+        subprocess.run('sudo mount -o remount,ro / ; sudo mount -o remount,ro /boot', shell=True)
+        return self
+
+def write_capability ():
+    return WriteCapability()
+
 def check_usb_gadget_attached ():
     with open("/sys/devices/platform/soc/20980000.usb/udc/20980000.usb/state", 'r') as file:
         state = str(file.readline()).rstrip()
@@ -8,6 +27,7 @@ def check_usb_gadget_attached ():
 
 def system_sync_all ():
     subprocess.run('sudo /usr/bin/bash -c "sync; echo 3 > /proc/sys/vm/drop_caches"', shell=True)
+
 
 def system_wifi_info ():
     # get wpa_supplicant info 

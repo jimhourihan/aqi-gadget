@@ -613,13 +613,15 @@ class RawDataServer (object):
         conf = wificonf.substitute(keys)
         tempfile = "/tmp/wpa_supplicant.conf"
         wpafile = "/etc/wpa_supplicant/wpa_supplicant.conf"
-        with open(tempfile, "w") as file:
-            file.write(conf)
-        # move it to /etc/wpa_supplicant/wpa_supplicant.conf as root
-        subprocess.run("sudo mv {} {}".format(tempfile, wpafile), shell=True)
-        subprocess.run("sudo chmod 600 {}".format(wpafile), shell=True)
-        system_tools.system_sync_all()
-        subprocess.run("sudo wpa_supplicant -B -i wlan0 -c {} -D wext".format(wpafile), shell=True)
+        with system_tools.write_capability() as capability:
+            with open(tempfile, "w") as file:
+                file.write(conf)
+            # move it to /etc/wpa_supplicant/wpa_supplicant.conf as root
+            subprocess.run("sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot", shell=True)
+            subprocess.run("sudo mv {} {}".format(tempfile, wpafile), shell=True)
+            subprocess.run("sudo chmod 600 {}".format(wpafile), shell=True)
+            system_tools.system_sync_all()
+            subprocess.run("sudo wpa_supplicant -B -i wlan0 -c {} -D wext".format(wpafile), shell=True)
         # sync file system
         subprocess.run("sudo nohup reboot&", shell=True)
         return "<pre>RESTARTING...</pre>"
@@ -630,19 +632,22 @@ class RawDataServer (object):
         aqi_gadget_config.aqi_function = aqifunc
         aqi_gadget_config.aqi_type = aqitype
         aqi_gadget_config.temp_offset_celsius = offset
-        aqi_gadget_config.write_config_file()
+        with system_tools.write_capability() as capability:
+            aqi_gadget_config.write_config_file()
         return self.internal_forward_to("settings")
 
     @cherrypy.expose
     def set_expert (self, modes=""):
         aqi_gadget_config.display_modes = eval(modes)
-        aqi_gadget_config.write_config_file()
+        with system_tools.write_capability() as capability:
+            aqi_gadget_config.write_config_file()
         return self.internal_forward_to("settings")
 
     @cherrypy.expose
     def restore_expert (self, modes=""):
         aqi_gadget_config.display_modes = aqi_gadget_config.default_display_modes
-        aqi_gadget_config.write_config_file()
+        with system_tools.write_capability() as capability:
+            aqi_gadget_config.write_config_file()
         return self.internal_forward_to("settings")
 
     @cherrypy.expose
