@@ -36,7 +36,7 @@ forwardhtml = Template("""
 </html>
 """)
 
-attachedblurb = """NOTE: Settings are disabled when using WiFi. To change settings plug the AQI gadget into a computer using the USB socket closer to the center of the device. Be sure to use a micro USB cable which supports data not just power."""
+attachedblurb = """NOTE: Settings are disabled when using WiFi. To change settings plug the AQI gadget into a computer using the USB socket closer to the display. Be sure to use a micro USB cable which supports data not just power."""
 
 statushtml = Template("""
 <style>
@@ -359,8 +359,40 @@ envhtml = Template("""
 </body>
 """)
 
-aqihtml = Template("""
+datahtml = Template("""
 <style>
+
+body { background-color: $BG; }
+
+  table { width: 95%; }
+  td { font-size: 3vw; }
+  th { 
+    color: #FFFFBB;
+    font-size: 3vw;
+    padding-top: 2.5vw;
+    padding-bottom: 2.5vw; 
+  }
+
+  .count { color: white; }
+  .barlabel { color: white;}
+
+  .clabel { text-align: right; font-size: 6vw; }
+  .cvalue { text-align: left; font-size: 6vw; font-weight: bold; padding-left: 2vw;}
+
+  .graph {
+      background: #888888;
+      padding: 2vw;
+      margin-top: 5vw;
+      width: 95%;
+  }
+
+.bar1 { padding: 1vw; font-size: 6vw; width: $BAR1%; background: black; color: white; }
+.bar2 { padding: 1vw; font-size: 6vw; width: $BAR2%; background: black; color: white; } 
+.bar3 { padding: 1vw; font-size: 6vw; width: $BAR3%; background: black; color: white; } 
+.bar4 { padding: 1vw; font-size: 6vw; width: $BAR4%; background: black; color: white; }
+.bar5 { padding: 1vw; font-size: 6vw; width: $BAR5%; background: black; color: white; }
+.bar6 { padding: 1vw; font-size: 6vw; width: $BAR6%; background: black; color: white; }
+
 .centered {
     position: absolute;
     left: 50%;
@@ -467,20 +499,99 @@ aqihtml = Template("""
 
 </style>
 <meta http-equiv="refresh" content="$REFRESH">
-<body style="background-color: $BG">
+<body>
   <html>
     <a href="http://$HOST/$TARGET0?refresh=$REFRESH" class="button0"><div class="boldfont">$VALUE0</div><div class="regularfont">$LABEL0</div></a>
     <a href="http://$HOST/$TARGET1?refresh=$REFRESH" class="button1"><div class="boldfont">$VALUE1</div><div class="regularfont">$LABEL1</div></a>
     <a href="http://$HOST/$TARGET2?refresh=$REFRESH" class="button2"><div class="boldfont">$VALUE2</div><div class="regularfont">$LABEL2</div></a>
     <a href="http://$HOST/$TARGET3?refresh=$REFRESH" class="button3"><div class="boldfont">$VALUE3</div><div class="regularfont">$LABEL3</div></a>
+""")
 
-
+aqipart = Template("""
     <div class="centered">
         <center> <div class="bignum">$MAINVALUE</div> </center>
         <center> <div class="desc">$DESC</div> </center>
         <center> <div class="subdesc">$MAINLABEL | $MACHINE</div> </center>
         <center> <div class="time">$TIME</div> </center>
     </div>
+  </html>
+</body>
+""")
+
+graphpart = Template("""
+
+    <div class="graph">
+      <table>
+        
+        <colgroup>
+          <col>
+          <col width="85%">
+          <col>
+        </colgroup>
+
+        <tr>
+          <th>Diameter</th>
+          <th>Percentage</th>
+          <th>Count</th>
+        </tr>
+
+        <tr>
+          <td><span class="barlabel">0.3&#160;µm</span></td>
+          <td><div class="bar1">&#160;</div></td>
+          <td><span class="count">$COUNT1</span></td>
+        </tr>
+
+        <tr>
+          <td><span class="barlabel">0.5&#160;µm</span></td>
+          <td><div class="bar2">&#160;</div></td>
+          <td><span class="count">$COUNT2</span></td>
+        </tr>
+
+        <tr>
+          <td><span class="barlabel">1.0&#160;µm</span></td>
+          <td><div class="bar3">&#160;</div></td>
+          <td><span class="count">$COUNT3</span></td>
+        </tr>
+
+        <tr>
+          <td><span class="barlabel">2.5&#160;µm</span></td>
+          <td><div class="bar4">&#160;</div></td>
+          <td><span class="count">$COUNT4</span></td>
+        </tr>
+
+        <tr>
+          <td><span class="barlabel">5.0&#160;µm</span></td>
+          <td><div class="bar5">&#160;</div></td>
+          <td><span class="count">$COUNT5</span></td>
+        </tr>
+
+        <tr>
+          <td><span class="barlabel">10.0&#160;µm</span></td>
+          <td><div class="bar6">&#160;</div></td>
+          <td><span class="count">$COUNT6</span></td>
+        </tr>
+
+      </table>
+
+    </div>
+
+<br>
+<br>
+
+    <table style="font-size: 6vw;">
+        <colgroup>
+          <col width="50%">
+          <col width="50%">
+        </colgroup>
+        <tr> 
+            <td><div class="clabel">Total Count:</div></td>
+            <td><div class="cvalue">$PCOUNT</div></td>
+        </tr> 
+        <tr> 
+            <td><div class="clabel">Avg Diameter:</div></td>
+            <td><div class="cvalue">$AVGD µm</div></td>
+        </tr> 
+    </table>
   </html>
 </body>
 """)
@@ -707,7 +818,7 @@ class RawDataServer (object):
         keys = {
             "MAINVALUE" : str(aqi[0]),
             "MAINLABEL" : "{} {} AQI".format(aqi_gadget_config.aqi_type, aqi_gadget_config.aqi_function),
-            "VALUE0" : "{:.0f}".format(b_con),
+            "VALUE0" : "{:.1f}".format(correction(c, h)),
             "VALUE1" : count,
             "VALUE2" : "{:.1f}°".format(b_temp),
             "VALUE3" : "{:.0f}%".format(b_hum),
@@ -715,8 +826,8 @@ class RawDataServer (object):
             "LABEL1" : "{:.1f}µm Avg".format(avgD),
             "LABEL2" : "Temp. {}".format('F' if aqi_gadget_config.use_fahrenheit else 'C'),
             "LABEL3" : "Humidity",
-            "TARGET0" : "concentration",
-            "TARGET1" : "concentration",
+            "TARGET0" : "graph",
+            "TARGET1" : "graph",
             "TARGET2" : "env",
             "TARGET3" : "env",
             "BGCOLOR0" : to_html_color(b_con_rgb),
@@ -731,18 +842,108 @@ class RawDataServer (object):
             #"TIME" : now.ctime(),
             "TIME" : time.ctime(t),
             "REFRESH" : str(10000),
+            "BAR1" : "",
+            "BAR2" : "",
+            "BAR3" : "",
+            "BAR4" : "",
+            "BAR5" : "",
+            "BAR6" : "",
         }
 
-        return aqihtml.substitute({**keys, **other_keys})
+        return datahtml.substitute({**keys, **other_keys}) + aqipart.substitute({**keys, **other_keys}) 
+
+    def big_graph (self, other_keys):
+        c          = self.pm_value["pm25_15s"]
+        count03    = self.pm_value["pm03_count"]
+        count05    = self.pm_value["pm05_count"]
+        count10    = self.pm_value["pm10_count"]
+        count25    = self.pm_value["pm25_count"]
+        count50    = self.pm_value["pm50_count"]
+        count100    = self.pm_value["pm100_count"]
+        tcount     = count03 + count05 + count10 + count25 + count50 + count100
+        ncount03   = count03 / tcount # normalized
+        ncount05   = count05 / tcount
+        ncount10   = count10 / tcount
+        ncount25   = count25 / tcount
+        ncount50   = count50 / tcount
+        ncount100  = count100 / tcount
+        avgD       = ncount03 * 0.3 + ncount05 * 0.5 + ncount10 * 1.0 + ncount25 * 2.5 + ncount50 * 5.0 + ncount100 * 10.0
+        h          = self.env_value["H"]
+        t          = self.pm_value["time"]
+        correction = aqi_correction_func(aqi_gadget_config.aqi_function)
+        aqi        = aqi_from_concentration(correction(c, h), 2.5, aqi_gadget_config.aqi_type)
+        b_temp     = self.env_value['F' if aqi_gadget_config.use_fahrenheit else 'C']
+        b_hum      = h
+        b_con      = c
+        b_temp_rgb = (1, .8, .8)
+        b_hum_rgb  = (.8, .8, 1.0)
+        rgb        = aqi[2]
+        lum        = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
+        bg         = to_html_color(rgb)
+        now        = datetime.now()
+        port       = server_ip + ":" + str(server_port)
+        machine    = server_name
+
+        keys = {
+            "PCOUNT" : tcount,
+            "AVGD" : "{:.2f}".format(avgD),
+            "BAR1" : "{:.0f}".format(ncount03 * 100.0),
+            "BAR2" : "{:.0f}".format(ncount05 * 100.0),
+            "BAR3" : "{:.0f}".format(ncount10 * 100.0),
+            "BAR4" : "{:.0f}".format(ncount25 * 100.0),
+            "BAR5" : "{:.0f}".format(ncount50 * 100.0),
+            "BAR6" : "{:.0f}".format(ncount100 * 100.0),
+            "COUNT1" : count03,
+            "COUNT2" : count05,
+            "COUNT3" : count10,
+            "COUNT4" : count25,
+            "COUNT5" : count50,
+            "COUNT6" : count100,
+            "VALUE0" : "{:.1f}".format(correction(c, h)),
+            "VALUE1" : str(aqi[0]),
+            "VALUE2" : "{:.1f}°".format(b_temp),
+            "VALUE3" : "{:.0f}%".format(b_hum),
+            "LABEL0" : "µg/m<sup>3</sup>",
+            "LABEL1" : "AQI",
+            "LABEL2" : "Temp. {}".format('F' if aqi_gadget_config.use_fahrenheit else 'C'),
+            "LABEL3" : "Humidity",
+            "TARGET0" : "aqi",
+            "TARGET1" : "aqi",
+            "TARGET2" : "env",
+            "TARGET3" : "env",
+            "BGCOLOR0" : to_html_color((0.85, 0.85, 0.85)),
+            "BGCOLOR1" : bg,
+            "BGCOLOR2" : to_html_color(b_temp_rgb),
+            "BGCOLOR3" : to_html_color(b_hum_rgb),
+            "BG" : to_html_color((.85, .85, .85)),
+            "FG" : "black",
+            "HOST" : port,
+            "MACHINE" : machine,
+            "DESC" : aqi[1],
+            #"TIME" : now.ctime(),
+            "TIME" : time.ctime(t),
+            "REFRESH" : str(10000),
+        }
+
+        return datahtml.substitute({**keys, **other_keys}) + graphpart.substitute({**keys, **other_keys}) 
 
     @cherrypy.expose
     def index (self):
         return self.aqi(refresh=10)
 
     @cherrypy.expose
+    def graph (self, refresh=1000000):
+        keys = {"REFRESH" : str(refresh)}
+        return self.big_graph(keys)
+
+    @cherrypy.expose
     def aqi (self, refresh=100000):
         keys = {"REFRESH" : str(refresh)}
         return self.big_aqi(keys)
+
+    @cherrypy.expose
+    def manual (self, refresh=100000):
+        return "NOT YET, SORRY"
 
     @cherrypy.expose
     def display (self):
