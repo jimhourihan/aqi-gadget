@@ -378,6 +378,7 @@ body { background-color: $BG; }
 
   .clabel { text-align: right; font-size: 6vw; }
   .cvalue { text-align: left; font-size: 6vw; font-weight: bold; padding-left: 2vw;}
+  .bigcvalue { text-align: center; font-size: 12vw; font-weight: bold; padding-left: 2vw; white-space: nowrap; }
 
   .graph {
       background: #888888;
@@ -596,6 +597,23 @@ graphpart = Template("""
 </body>
 """)
 
+envpart = Template("""
+
+<div class="centered">
+  <table style="font-size: 6vw; font-family: Arial, Helvetica, sans-serif;">
+        <colgroup>
+          <col width="100%">
+        </colgroup>
+        <tr> <td><div class="bigcvalue">$TEMPERATUREC</div></td> </tr> 
+        <tr> <td><div class="bigcvalue">$TEMPERATUREF</div></td> </tr> 
+        <tr> <td><div class="bigcvalue">$HUMIDITY</div></td> </tr> 
+        <tr> <td><div class="bigcvalue">$PRESSURE</div></td> </tr> 
+        <tr> <td><div class="bigcvalue">$GAS</div></td> </tr> 
+    </table>
+</div>
+  
+""")
+
 def to_html_color (rgb):
     nums = [rgb[0] * 255.0, rgb[1] * 255.0, rgb[2] * 255.0]
     return '#' + ''.join('{:02X}'.format(int(a)) for a in nums)
@@ -766,23 +784,77 @@ class RawDataServer (object):
         val = {**self.env_value, **self.pm_value}
         return str(val)
 
-    @cherrypy.expose
-    def env (self, refresh=10000):
+    def big_env (self, other_keys):
+        c          = self.pm_value["pm25_15s"]
+        count03    = self.pm_value["pm03_count"]
+        count05    = self.pm_value["pm05_count"]
+        count10    = self.pm_value["pm10_count"]
+        count25    = self.pm_value["pm25_count"]
+        tcount     = count03 + count05 + count10 + count25
+        ncount03   = count03 / tcount # normalized
+        ncount05   = count05 / tcount
+        ncount10   = count10 / tcount
+        ncount25   = count25 / tcount
+        avgD       = ncount03 * 0.3 + ncount05 * 0.5 + ncount10 * 1.0 + ncount25 * 2.5
+        count      = tcount if tcount < 1000 else str(int(tcount/1000.0)) + "k"
+        h          = self.env_value["H"]
+        correction = aqi_correction_func(aqi_gadget_config.aqi_function)
+        aqi        = aqi_from_concentration(correction(c, h), 2.5, aqi_gadget_config.aqi_type)
+        b_temp     = self.env_value['F' if aqi_gadget_config.use_fahrenheit else 'C']
+        b_hum      = h
+        b_con      = c
+        b_temp_rgb = (1, .8, .8)
+        b_hum_rgb  = (.8, .8, 1.0)
+        b_con_rgb  = (.85, .85, .85)
+        rgb        = aqi[2]
+        port       = server_ip + ":" + str(server_port)
+        machine    = server_name
+
         t = self.env_value["time"]
-        F = "{:.1f}".format(self.env_value["F"])
-        C = "{:.1f}".format(self.env_value["C"])
-        H = "{:.1f}".format(self.env_value["H"])
+        C = "{:.1f}°C".format(self.env_value["C"])
+        F = "{:.1f}°F".format(self.env_value["F"])
+        H = "{:.1f}% RH".format(self.env_value["H"])
+        P = "{:.1f} mbars".format(self.env_value["hPa"])
+        gas = self.env_value["Gas"]
+        G = "" if type(gas) == str else "{:.1f} Ω".format(gas)
 
         keys = {
+            "VALUE0" : "{:.1f}".format(correction(c, h)),
+            "VALUE1" : count,
+            "VALUE2" : str(aqi[0]),
+            "VALUE3" : "-",
+            "LABEL0" : "µg/m<sup>3</sup>",
+            "LABEL1" : "{:.1f}µm Avg".format(avgD),
+            "LABEL2" : "AQI",
+            "LABEL3" : "-",
+            "TARGET0" : "graph",
+            "TARGET1" : "graph",
+            "TARGET2" : "aqi",
+            "TARGET3" : "env",
+            "BGCOLOR0" : to_html_color(b_con_rgb),
+            "BGCOLOR1" : to_html_color(b_con_rgb),
+            "BGCOLOR2" : to_html_color(rgb),
+            "BGCOLOR3" : to_html_color(b_con_rgb),
+            "BAR1" : "",
+            "BAR2" : "",
+            "BAR3" : "",
+            "BAR4" : "",
+            "BAR5" : "",
+            "BAR6" : "",
             "FG" : "black",
             "BG" : "#aaaaaa",
-            "TEMPF" : F,
-            "TEMPC" : C,
+            "TEMPERATUREC" : C,
+            "TEMPERATUREF" : F,
             "HUMIDITY" : H,
+            "PRESSURE" : P,
+            "GAS" : G,
             "TIME" : time.ctime(t),
-            "REFRESH" : str(refresh),
+            "HOST" : port,
+            "MACHINE" : machine,
+            "REFRESH" : "10000",
         }
-        return envhtml.substitute(keys)
+
+        return datahtml.substitute({**keys, **other_keys}) + envpart.substitute({**keys, **other_keys}) 
 
     def big_aqi (self, other_keys):
         c          = self.pm_value["pm25_15s"]
@@ -940,6 +1012,11 @@ class RawDataServer (object):
     def aqi (self, refresh=100000):
         keys = {"REFRESH" : str(refresh)}
         return self.big_aqi(keys)
+
+    @cherrypy.expose
+    def env (self, refresh=10000):
+        keys = {"REFRESH" : str(refresh)}
+        return self.big_env(keys)
 
     @cherrypy.expose
     def manual (self, refresh=100000):
