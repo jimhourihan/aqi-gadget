@@ -55,7 +55,6 @@ statushtml = Template("""
   }
 
   table {
-      font-size: 1.7vw;
       width: 100%;
   }
 
@@ -63,18 +62,13 @@ statushtml = Template("""
 
   label { font-weight: bold; }
 
-  input { font-size: 1.7vw; }
-  button { font-size: 1.7vw; }
-  select { font-size: 1.7vw; }
-  option { font-size: 1.7vw; }
-
   .fail {
       background-color: orange;
       font-weight: bold;
       text-align: center;
-      font-size: 1.8vw;
+      font-size: 2.8vw;
       padding: 4px;
-      border-radius: 2vw;
+      border-radius: 2.8vw;
   }
 
   .slogan {
@@ -325,46 +319,19 @@ $BLURB
  
 """)
 
-envhtml = Template("""
-<style>
-.centered {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translateX(-50%) translateY(-50%);
-}
-.desc {
-    color: $FG;
-    font-size: 14vw;
-    font-family: Arial, Helvetica, sans-serif;
-    font-weight: bold;
-}
-.time {
-    color: $FG;
-    font-size: 3.5vw;
-    font-family: Arial, Helvetica, sans-serif;
-}
-</style>
-<meta http-equiv="refresh" content="$REFRESH">
-<body style="background-color: $BG">
-  <html>
-    <div class="centered">
-        <center> <div class="desc">$TEMPF°F</div></center>
-        <center> <div class="desc">$TEMPC°C</div></center>
-<br>
-        <center> <div class="desc">$HUMIDITY%</div> </center>
-        <center> <div class="time">$TIME</div> </center>
-    </div>
-  </html>
-</body>
-""")
-
 datahtml = Template("""
 <style>
 
-body { background-color: $BG; }
+body { 
+    background-color: $BG; 
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+    font-family: Arial, Helvetica, sans-serif;
+}
 
-  table { width: 95%; }
+  table { 
+    width: 100%; 
+  }
   td { font-size: 3vw; }
   th { 
     color: #FFFFBB;
@@ -384,7 +351,8 @@ body { background-color: $BG; }
       background: #888888;
       padding: 2vw;
       margin-top: 5vw;
-      width: 95%;
+      margin-left: 1.5%;
+      width: 93%;
   }
 
 .bar1 { padding: 1vw; font-size: 6vw; width: $BAR1%; background: black; color: white; }
@@ -431,11 +399,13 @@ body { background-color: $BG; }
 .boldfont {
   font-family: Arial, Helvetica, sans-serif;
   font-weight: bold;
+  margin-top: 2vw;
 }
 
 .regularfont {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 3vw;
+  margin-bottom: 2vw;
 }
 
 .button0 {
@@ -443,8 +413,7 @@ body { background-color: $BG; }
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
-  width: 23.5%;
-  padding: 1% 0px;
+  width: 100%;
   margin: 0px 0px;
   text-align: center;
   text-decoration: none;
@@ -458,8 +427,7 @@ body { background-color: $BG; }
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
-  width: 23.5%;
-  padding: 1% 0px;
+  width: 100%;
   margin: 0px 0px;
   text-align: center;
   text-decoration: none;
@@ -473,8 +441,7 @@ body { background-color: $BG; }
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
-  width: 23.5%;
-  padding: 1% 0px;
+  width: 100%;
   margin: 0px 0px;
   text-align: center;
   text-decoration: none;
@@ -488,8 +455,7 @@ body { background-color: $BG; }
   border: 1px solid grey;
   border-radius: 8px;
   color: black;
-  width: 23.5%;
-  padding: 1% 0px;
+  width: 100%;
   margin: 0px 0px;
   text-align: center;
   text-decoration: none;
@@ -502,10 +468,27 @@ body { background-color: $BG; }
 <meta http-equiv="refresh" content="$REFRESH">
 <body>
   <html>
-    <a href="http://$HOST/$TARGET0?refresh=$REFRESH" class="button0"><div class="boldfont">$VALUE0</div><div class="regularfont">$LABEL0</div></a>
-    <a href="http://$HOST/$TARGET1?refresh=$REFRESH" class="button1"><div class="boldfont">$VALUE1</div><div class="regularfont">$LABEL1</div></a>
-    <a href="http://$HOST/$TARGET2?refresh=$REFRESH" class="button2"><div class="boldfont">$VALUE2</div><div class="regularfont">$LABEL2</div></a>
-    <a href="http://$HOST/$TARGET3?refresh=$REFRESH" class="button3"><div class="boldfont">$VALUE3</div><div class="regularfont">$LABEL3</div></a>
+    <table style="width=100%;">
+    <colgroup>
+          <col width="25%">
+          <col width="25%">
+          <col width="25%">
+          <col width="25%">
+    </colgroup>
+    <tr>
+    <td>
+        <a href="http://$HOST/$TARGET0?refresh=$REFRESH" class="button0"><div class="boldfont">$VALUE0</div><div class="regularfont">$LABEL0</div></a>
+    </td>
+    <td>
+        <a href="http://$HOST/$TARGET1?refresh=$REFRESH" class="button1"><div class="boldfont">$VALUE1</div><div class="regularfont">$LABEL1</div></a>
+    </td>
+    <td>
+        <a href="http://$HOST/$TARGET2?refresh=$REFRESH" class="button2"><div class="boldfont">$VALUE2</div><div class="regularfont">$LABEL2</div></a>
+    </td>
+    <td>
+        <a href="http://$HOST/$TARGET3?refresh=$REFRESH" class="button3"><div class="boldfont">$VALUE3</div><div class="regularfont">$LABEL3</div></a>
+    </td>
+    </tr></table>
 """)
 
 aqipart = Template("""
@@ -515,8 +498,6 @@ aqipart = Template("""
         <center> <div class="subdesc">$MAINLABEL | $MACHINE</div> </center>
         <center> <div class="time">$TIME</div> </center>
     </div>
-  </html>
-</body>
 """)
 
 graphpart = Template("""
@@ -525,9 +506,9 @@ graphpart = Template("""
       <table>
         
         <colgroup>
-          <col>
+          <col width="7.5%">
           <col width="85%">
-          <col>
+          <col width="7.5%">
         </colgroup>
 
         <tr>
@@ -593,8 +574,6 @@ graphpart = Template("""
             <td><div class="cvalue">$AVGD µm</div></td>
         </tr> 
     </table>
-  </html>
-</body>
 """)
 
 envpart = Template("""
@@ -612,6 +591,26 @@ envpart = Template("""
     </table>
 </div>
   
+""")
+
+suffixhtml = Template("""
+<!--
+    <table style="width=100%;position: fixed; bottom: 0px;">
+    <colgroup>
+          <col width="50%">
+          <col width="50%">
+    </colgroup>
+    <tr>
+    <td>
+        <a href="http://$HOST/$TARGET0?refresh=$REFRESH" class="button0"><div class="boldfont">Settings</div><div class="regularfont">.</div></a>
+    </td>
+    <td>
+        <a href="http://$HOST/$TARGET1?refresh=$REFRESH" class="button1"><div class="boldfont">Status</div><div class="regularfont">.</div></a>
+    </td>
+    </tr></table>
+-->
+  </html>
+</body>
 """)
 
 def to_html_color (rgb):
@@ -799,7 +798,8 @@ class RawDataServer (object):
         count      = tcount if tcount < 1000 else str(int(tcount/1000.0)) + "k"
         h          = self.env_value["H"]
         correction = aqi_correction_func(aqi_gadget_config.aqi_function)
-        aqi        = aqi_from_concentration(correction(c, h), 2.5, aqi_gadget_config.aqi_type)
+        ccorrected = correction(c, h)
+        aqi        = aqi_from_concentration(ccorrected, 2.5, aqi_gadget_config.aqi_type)
         b_temp     = self.env_value['F' if aqi_gadget_config.use_fahrenheit else 'C']
         b_hum      = h
         b_con      = c
@@ -819,7 +819,7 @@ class RawDataServer (object):
         G = "" if type(gas) == str else "{:.1f} Ω".format(gas)
 
         keys = {
-            "VALUE0" : "{:.1f}".format(correction(c, h)),
+            "VALUE0" : "{:.1f}".format(ccorrected) if ccorrected < 10.0 else "{:.0f}".format(ccorrected),
             "VALUE1" : count,
             "VALUE2" : str(aqi[0]),
             "VALUE3" : "-",
@@ -842,7 +842,7 @@ class RawDataServer (object):
             "BAR5" : "",
             "BAR6" : "",
             "FG" : "black",
-            "BG" : "#aaaaaa",
+            "BG" : "#bbbbbb",
             "TEMPERATUREC" : C,
             "TEMPERATUREF" : F,
             "HUMIDITY" : H,
@@ -854,7 +854,11 @@ class RawDataServer (object):
             "REFRESH" : "10000",
         }
 
-        return datahtml.substitute({**keys, **other_keys}) + envpart.substitute({**keys, **other_keys}) 
+        keys = {**keys, **other_keys}
+        html0 = datahtml.substitute(keys)
+        htmlc = envpart.substitute(keys)
+        html1 = suffixhtml.substitute(keys)
+        return html0 + htmlc + html1
 
     def big_aqi (self, other_keys):
         c          = self.pm_value["pm25_15s"]
@@ -872,7 +876,8 @@ class RawDataServer (object):
         h          = self.env_value["H"]
         t          = self.pm_value["time"]
         correction = aqi_correction_func(aqi_gadget_config.aqi_function)
-        aqi        = aqi_from_concentration(correction(c, h), 2.5, aqi_gadget_config.aqi_type)
+        ccorrected = correction(c, h)
+        aqi        = aqi_from_concentration(ccorrected, 2.5, aqi_gadget_config.aqi_type)
         b_temp     = self.env_value['F' if aqi_gadget_config.use_fahrenheit else 'C']
         b_hum      = h
         b_con      = c
@@ -890,7 +895,7 @@ class RawDataServer (object):
         keys = {
             "MAINVALUE" : str(aqi[0]),
             "MAINLABEL" : "{} {} AQI".format(aqi_gadget_config.aqi_type, aqi_gadget_config.aqi_function),
-            "VALUE0" : "{:.1f}".format(correction(c, h)),
+            "VALUE0" : "{:.1f}".format(ccorrected) if ccorrected < 10.0 else "{:.0f}".format(ccorrected),
             "VALUE1" : count,
             "VALUE2" : "{:.1f}°".format(b_temp),
             "VALUE3" : "{:.0f}%".format(b_hum),
@@ -922,7 +927,11 @@ class RawDataServer (object):
             "BAR6" : "",
         }
 
-        return datahtml.substitute({**keys, **other_keys}) + aqipart.substitute({**keys, **other_keys}) 
+        keys = {**keys, **other_keys}
+        html0 = datahtml.substitute(keys)
+        htmlc = aqipart.substitute(keys)
+        html1 = suffixhtml.substitute(keys)
+        return html0 + htmlc + html1
 
     def big_graph (self, other_keys):
         c          = self.pm_value["pm25_15s"]
@@ -943,7 +952,8 @@ class RawDataServer (object):
         h          = self.env_value["H"]
         t          = self.pm_value["time"]
         correction = aqi_correction_func(aqi_gadget_config.aqi_function)
-        aqi        = aqi_from_concentration(correction(c, h), 2.5, aqi_gadget_config.aqi_type)
+        ccorrected = correction(c, h)
+        aqi        = aqi_from_concentration(ccorrected, 2.5, aqi_gadget_config.aqi_type)
         b_temp     = self.env_value['F' if aqi_gadget_config.use_fahrenheit else 'C']
         b_hum      = h
         b_con      = c
@@ -971,7 +981,7 @@ class RawDataServer (object):
             "COUNT4" : count25,
             "COUNT5" : count50,
             "COUNT6" : count100,
-            "VALUE0" : "{:.1f}".format(correction(c, h)),
+            "VALUE0" : "{:.1f}".format(ccorrected) if ccorrected < 10.0 else "{:.0f}".format(ccorrected),
             "VALUE1" : str(aqi[0]),
             "VALUE2" : "{:.1f}°".format(b_temp),
             "VALUE3" : "{:.0f}%".format(b_hum),
@@ -997,7 +1007,11 @@ class RawDataServer (object):
             "REFRESH" : str(10000),
         }
 
-        return datahtml.substitute({**keys, **other_keys}) + graphpart.substitute({**keys, **other_keys}) 
+        keys = {**keys, **other_keys}
+        html0 = datahtml.substitute(keys)
+        htmlc = graphpart.substitute(keys)
+        html1 = suffixhtml.substitute(keys)
+        return html0 + htmlc + html1
 
     @cherrypy.expose
     def index (self):
