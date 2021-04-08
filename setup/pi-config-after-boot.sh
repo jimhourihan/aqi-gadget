@@ -7,6 +7,7 @@ fi
 
 cd /boot
 tarfile=$(echo aqi-gadget-release-*.tar.gz)
+tarfile_base="${tarfile%%.*}"
 echo Using $tarfile
 
 # Given a filename, a regex pattern to match and a replacement string:
@@ -69,6 +70,7 @@ product AQI Gadget
 manufacturer Absolute Garbage
 hostname_base aqi-gadget
 config otg wifi adafruit_minitft adafruit_PMSA003I adafruit_BME680
+release $tarfile_base
 EOF
 
 SNUM=`awk '{ if ($1 == "serial_number") print $2 }' /boot/aqi-gadget-info`
