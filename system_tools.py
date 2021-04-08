@@ -39,6 +39,11 @@ def system_wifi_info ():
     # not reporting the password on purpose
     return (country, network)
 
+def get_release_from_pi_home ():
+    cmd  = """cd ~pi;file * "-F " | awk '{ if ($2 == "directory") print($1) }'"""
+    blob = subprocess.check_output(cmd, shell=True).decode("utf-8")
+    return blob.strip()
+
 def system_gadget_info ():
     # /boot/aqi-gadget-info contents
     info_dict = {
@@ -55,6 +60,11 @@ def system_gadget_info ():
             words = line.split()
             if len(words) > 0:
                 info_dict[words[0]] = " ".join(words[1:])
+
+    if info_dict['release'] == 'unknown':
+        # fall back to literal release untar dir
+        info_dict['release'] = get_release_from_pi_home()
+
     return info_dict
 
 def system_network_status ():
