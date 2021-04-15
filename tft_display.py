@@ -190,12 +190,16 @@ def draw_packet_into (mode, packet, draw_obj, image_obj):
         draw_single_value(draw_obj, aqi, rgb, level, name, delta)
 
     elif mode == "RAW25":
-        v = "{:.0f}".format(packet["pm25_15s"])
+        aqifunc = aqi_gadget_config.aqi_function
+        converter = aqi_util.aqi_correction_func(aqifunc)
+        c = converter(packet["pm25_15s"], packet["H"])
+        v = ("{:.0f}" if c >= 10.0 else "{:.1f}").format(c)
         delta = packet["pm25_delta"]
         draw_single_value(draw_obj, v, (.20, .20, .20), "pm2.5 Conc", "µg/m^3", delta)
 
     elif mode == "RAW100":
-        v = "{:.0f}".format(packet["pm100_15s"])
+        c = packet["pm100_15s"]
+        v = ("{:.0f}" if c >= 10.0 else "{:.1f}").format(c)
         delta = packet["pm100_delta"]
         draw_single_value(draw_obj, v, (.20, .20, .20), "pm10 Conc", "µg/m^3", delta)
 
