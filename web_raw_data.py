@@ -745,7 +745,6 @@ class RawDataServer (object):
             with open(tempfile, "w") as file:
                 file.write(conf)
             # move it to /etc/wpa_supplicant/wpa_supplicant.conf as root
-            subprocess.run("sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot", shell=True)
             subprocess.run("sudo mv {} {}".format(tempfile, wpafile), shell=True)
             subprocess.run("sudo chmod 600 {}".format(wpafile), shell=True)
             system_tools.system_sync_all()
