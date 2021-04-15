@@ -127,7 +127,7 @@ apt install python3-numpy -y
 apt install libopenjp2-7-dev libtiff-dev -y
 pip3 install --upgrade --force-reinstall spidev
 pip3 install RPi.GPIO
-pip3 install wifi serial setproctitle systemd 
+pip3 install wifi serial setproctitle systemd tzupdate
 pip3 install Adafruit-Blinka Adafruit-PlatformDetect Adafruit-PureIO
 pip3 install adafruit-circuitpython-bme680 adafruit-circuitpython-busdevice adafruit-circuitpython-pm25 adafruit-circuitpython-rgb-display
 pip3 install CherryPy pillow numpy
