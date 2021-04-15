@@ -11,12 +11,6 @@ import urllib.request
 import systemd.daemon
 import system_tools
 
-def check_usb_gadget_attached ():
-    with open("/sys/devices/platform/soc/20980000.usb/udc/20980000.usb/state", 'r') as file:
-        state = str(file.readline()).rstrip()
-        print("INFO: [aqi] USB gadget mode: " + state)
-        return state != "not attached"
-
 def signal_handler (sig, frame):
     global stop_flag
     print("INFO: [aqi] stop from signal")
@@ -31,7 +25,7 @@ stop_flag       = False
 use_display     = aqi_gadget_config.use_mini_tft
 use_env_sensor  = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme680_sensor
 use_web_server  = aqi_gadget_config.use_web_server
-is_usb_gadget   = check_usb_gadget_attached()
+is_usb_gadget   = system_tools.check_usb_gadget_attached()
 blank_time_secs = aqi_gadget_config.screen_blank_secs
 
 def web_start (cmd_queue, data_queue, ipaddress, port, machine):
@@ -103,8 +97,6 @@ def display_loop (output_queue):
     modes          = aqi_gadget_config.display_modes
     mode_index     = 0
     stop           = False
-    backlight_time = time.time()
-    backlight      = True
     last_packet    = None
     output_state   = {}
 
@@ -112,6 +104,9 @@ def display_loop (output_queue):
     tft_display.set_mode(modes[mode_index])
     tft_display.set_backlight(True)
     tft_display.draw_clear()
+
+    backlight_time = time.time()
+    backlight      = True
 
     setproctitle.setproctitle("aqi: display_loop")
     while not stop:
@@ -268,7 +263,7 @@ def run ():
     while not stop_flag:
         if use_display and not event_event_queue.empty():
             e = event_event_queue.get()
-            if e == 3:
+            if e == 3 and False: # disabled
                 stop_flag = True
                 try:
                     if root:
@@ -276,8 +271,7 @@ def run ():
                 except:
                     print("WARNING: shutdown raised exception")
                 break;
-            else:
-                disp_output_queue.put(e)
+            disp_output_queue.put(e)
 
         pm_packet = None
         env_packet = None
