@@ -44,6 +44,13 @@ fb_draw      = ImageDraw.Draw(fb_image)
 blank_image  = None
 output_state = {} # combined packet
 
+
+def small_font ():
+    global mfont
+    if mfont == None:
+        mfont = ImageFont.truetype(ttf_file, 30)
+    return mfont
+
 def init_blank (blank_type = 'AQI'):
     global blank_image
     if blank_type == 'AQI':
@@ -91,10 +98,7 @@ def draw_single_value (out_draw, value, rgb, level, scale_name, delta=None):
 
     small = s[0] > 235
     if small:
-        global mfont
-        if mfont == None:
-            mfont = ImageFont.truetype(ttf_file, 30)
-        s = out_draw.textsize(str(value), font=mfont)
+        s = out_draw.textsize(str(value), font=small_font())
 
     xmargin = 10 if delta != None else 0
     (sx, sy) = ((width - s[0]) / 2.0 - xmargin, (height - s[1]) / 2.0 - 20)
@@ -112,6 +116,72 @@ def draw_single_value (out_draw, value, rgb, level, scale_name, delta=None):
         else:
             out_draw.polygon([(x,y), (x + tsize,y), (x + tsize/2.0, y + tsize/1.4)], fill=value_fg)
 
+
+def draw_graph (out_draw, rgb, packet):
+    value_fg = (0, 0, 0)
+    value_rgb = (int(rgb[0] * 255.0), int(rgb[1] * 255.0), int(rgb[2] * 255.0))
+    lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
+    rw = 16
+
+    if lum < 0.25:
+        value_fg = (200, 200, 200)
+
+    out_draw.rectangle([(0, 0), (width, height)], fill=value_rgb)
+
+    t = out_draw.textsize("μg", font=tfont)
+    xmargin = 10 
+    (tx, ty) = (width - t[0] - 10, height - t[1] - 6)
+    #out_draw.text( (tx, ty), "μg", font=tfont, fill=value_fg)
+
+    vlist = []
+    total = 0
+    count = 0
+    for n in ['03', '05', '10', '25', '50', '100']:
+        k = "pm{}_count".format(n)
+        v = packet[k]
+        a = int(n) / 10.0
+        vlist.append(v)
+        total += a * v
+        count += v
+
+    avg_rad = total / count
+
+    for i in range(0, len(vlist)):
+        v = vlist[i]
+        pcent = v / count
+        x0 = xmargin + i * rw
+        y0 = ty
+        x1 = x0 + rw - 2
+        y1 = y0 - pcent * (ty - 10)
+        out_draw.rectangle([(x0, y0), (x1, y1)], fill=value_fg)
+            
+    if count > 999999:
+        tcount = str(count // 1000000) + "M"
+    elif count > 999:
+        tcount = str(count // 1000) + "k"
+    else:
+        tcount = str(count)
+
+    trad = "{:0.2f}μm".format(avg_rad)
+
+    sfont = small_font()
+    tcount_size = out_draw.textsize(tcount, font=sfont)
+    trad_size = out_draw.textsize(trad, font=sfont)
+
+    w2 = width // 2
+    h2 = height // 2
+
+    #out_draw.rectangle([(w2, 0), (w2+2, height)], fill=value_fg)
+
+    x0 = (w2 - tcount_size[0]) // 2 + w2
+    y0 = h2 - tcount_size[1] - xmargin
+    out_draw.text( (x0, y0), tcount, font=sfont, fill=value_fg)
+
+    out_draw.rectangle([(w2 + xmargin, h2-2), (width - xmargin, h2)], fill=value_fg)
+
+    x0 = (w2 - trad_size[0]) // 2 + w2
+    y0 = h2 + xmargin // 2
+    out_draw.text( (x0, y0), trad, font=sfont, fill=value_fg)
 
 def draw_message (out_draw, title, msg):
     global mfont
@@ -245,6 +315,9 @@ def draw_packet_into (mode, packet, draw_obj, image_obj):
     elif mode == "CPU":
         info = get_cpu_info()
         draw_message(draw_obj, str(info[2]) + " Cores", str(info[0]) + "% | " + str(info[1]) + "%")
+
+    elif mode == "GRAPH":
+        draw_graph(draw_obj, (.1, .1, .1), packet)
 
     elif type(mode) == type([]) and len(mode) == 4:
         # top left
