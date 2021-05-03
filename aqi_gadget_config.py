@@ -27,7 +27,7 @@ env_polling_secs    = 15
 
 # default display modes
 default_display_modes = [["AQI", "RAW25", "TEMP", "RHUM"],
-                         "AQI", "RAW25", "TEMP", "RHUM", "MBARS", "GAS",
+                         "AQI", "RAW25", "GRAPH", "TEMP", "RHUM", "MBARS", "GAS",
                          ["HOST", "IP", "AQITYPE", "AQIFUNC"]]
 
 display_modes = default_display_modes
