@@ -40,7 +40,7 @@ def AQandU_25_correction (c):
     return cc if cc > 0.0 else 0.0
 
 def EPA_25_correction (c, rh):
-    cc = 0.534 * c - 0.0844 * rh + 5.604
+    cc = (0.534 * c - 0.0844 * rh + 5.604) if c < 250 else c
     return cc if cc > 0.0 else 0.0
 
 def EPA_100_correction (c, rh):
