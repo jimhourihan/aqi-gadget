@@ -15,6 +15,7 @@ def init ():
     i2c = busio.I2C(board.SCL, board.SDA)
     sensor = adafruit_bme680.Adafruit_BME680_I2C(i2c)
     start_time = time.time()
+    sensor.sea_level_pressure = 1013.25 # Avg sea-level pressure
     return sensor
 
 def read_packet ():
@@ -36,6 +37,7 @@ def read_packet ():
     gas      = sensor.gas
     h        = sensor.humidity * h_factor
     mbars    = sensor.pressure
+    alt      = sensor.altitude
 
     d = time.time() - start_time
     if d < 300:
@@ -49,6 +51,7 @@ def read_packet ():
         "F" : tempC * 1.8 + 32.0,
         "H" : h,
         "hPa" : mbars,
+        "AltP" : alt,
         "Gas" : gas,
         "time" : t
     }
