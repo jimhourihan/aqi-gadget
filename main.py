@@ -229,11 +229,14 @@ def event_loop (control_queue, event_queue):
 
 def run ():
     global stop_flag
+    global use_web_server
 
     root = (os.getuid() == 0)
 
     # Choose which interface to put web server on
     (machine, ipaddresses) = system_tools.get_host_info()
+
+    ipaddress = "127.0.0.1"
 
     if len(ipaddresses) > 0:
         if is_usb_gadget:
@@ -242,6 +245,9 @@ def run ():
             ipaddress = " ".join([x for x in ipaddresses if x[0:-1] == "10.10.10."])
         else:
             ipaddress = " ".join([x for x in ipaddresses if x[0:-1] != "10.10.10."])
+
+    if ipaddress == "127.0.0.1":
+        use_web_server = False
 
     setproctitle.setproctitle("aqi: pm25 process")
     pm25_queue         = Queue()
