@@ -31,6 +31,14 @@ aqi_type_description = {
     'IN' : 'Indian CPCB',
 }
 
+co2_ranges = [
+    (250, 1000, "OK", (0.1, 1.0, 0.1)),
+    (1000, 2000, "Poor", (1.0, 1.0, 0.1)),
+    (2000, 5000, "Unhealthy", (1.0, 0.5, 0.1)),
+    (5000, 40000, "Toxic", (1.0, 0.1, 0.1)),
+    (40000, 4000000, "Danger", (0.5, 0.4, 0.25)),
+]
+
 def LRAPA_25_correction (c):
     cc = c / 2.0 - 0.66
     return cc if cc > 0.0 else 0.0
@@ -78,3 +86,13 @@ def aqi_from_concentration (c, pmsize, index_code = 'US'):
 
     aqi = (ih - il) / (ch - cl) * (c - cl) + il
     return (int(aqi), t, rgb)
+
+
+def co2_level (c):
+    c = int(c)
+    if c < co2_ranges[0][0]:
+        return co2_ranges[0]
+    for r in co2_ranges:
+        if c >= r[0] and c <= r[1]:
+            return r
+    return co2_ranges[-1]
