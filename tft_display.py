@@ -274,8 +274,12 @@ def draw_packet_into (mode, packet, draw_obj, image_obj):
         draw_single_value(draw_obj, v, (.20, .20, .20), "pm10 Conc", "µg/m^3", delta)
 
     elif mode == "MBARS":
-        v = "{:.0f}".format(packet["hPa"])
+        v = "{:.0f}".format(packet["hPa"]) if "hPa" in packet else 1013
         draw_single_value(draw_obj, v, (.70, .85, 1.00), "Pressure", "mbar", None)
+
+    elif mode == "PALT":
+        v = "{:.0f}".format(packet["AltP"]) if "AltP" in packet else 0
+        draw_single_value(draw_obj, v, (.70, .85, 1.00), "Pr Altitude", "m", None)
 
     elif mode == "IP":
         draw_message(draw_obj, "IP Address", get_host_info()[1])
@@ -311,6 +315,14 @@ def draw_packet_into (mode, packet, draw_obj, image_obj):
             iaq  = ohms / 1000.0
             v    = "{:.0f}".format(iaq)
         draw_single_value(draw_obj, v, (0.0, 0.0, 1.0), "Gas", "IAQ")
+
+    elif mode == "CO2":
+        co2 = int(packet["CO2"]) if "CO2" in packet else "N/A"
+        if co2 == "N/A":
+            draw_single_value(draw_obj, co2, (0.5, 0.5, 0.5), "CO2", "ppm")
+        else:
+            r = aqi_util.co2_level(co2)
+            draw_single_value(draw_obj, co2, r[3], r[2], "CO2 ppm")
 
     elif mode == "CPU":
         info = get_cpu_info()

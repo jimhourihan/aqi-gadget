@@ -26,6 +26,7 @@ use_display     = aqi_gadget_config.use_mini_tft
 use_env_sensor  = aqi_gadget_config.use_dht_sensor \
     or aqi_gadget_config.use_bme680_sensor \
     or aqi_gadget_config.use_hts221_sensor
+use_co2_sensor  = aqi_gadget_config.use_scd30_sensor
 use_web_server  = aqi_gadget_config.use_web_server
 is_usb_gadget   = system_tools.check_usb_gadget_attached()
 blank_time_secs = aqi_gadget_config.screen_blank_secs
@@ -84,6 +85,40 @@ def bme680_loop (out_queue, control_queue):
             pass
         time.sleep(aqi_gadget_config.env_polling_secs)
     bme680_service.stop()
+
+def co2_loop (out_queue, control_queue):
+    print("INFO: [aqi] CO2 sensor loop started")
+    import scd30_service
+    scd30_service.init()
+    hPa = None
+    set_pressure_time = 0
+    setproctitle.setproctitle("aqi: scd30_loop")
+    running = True
+    while running:
+        while not control_queue.empty():
+            item = control_queue.get()
+            if item == "STOP":
+                running = False
+            if "hPa" in item and running:
+                hPa = item["hPa"]
+                t = time.time()
+                if t - set_pressure_time > 60.0:
+                    scd30_service.set_pressure(hPa)
+                    set_pressure_time = t
+        p = scd30_service.read_packet()
+        if p:
+            out_queue.put(p)
+        elif isinstance(p, str):
+            if p == "FAIL":
+                print("ERROR: [aqi] scd failure")
+                break
+        else:
+            pass
+        time.sleep(2.5)
+    print("INFO: [aqi] shutting down CO2 sensor")
+    scd30_service.stop()
+    while not control_queue.empty():
+        p = control_queue.get()
 
 def env_loop (out_queue, control_queue):
     print("INFO: [aqi] env sensor loop started")
@@ -269,16 +304,29 @@ def run ():
                                     args=(env_queue, env_control_queue))
         env_process.start()
 
+    co2_queue         = None
+    co2_control_queue = None
+    co2_process       = None
+
+    if use_co2_sensor:
+        setproctitle.setproctitle("aqi: env process")
+        co2_queue         = Queue()
+        co2_control_queue = Queue()
+        co2_process       = Process(target=co2_loop,
+                                    name="co2_loop",
+                                    args=(co2_queue, co2_control_queue))
+        co2_process.start()
+
     pm_packet = None
     if root:
         systemd.daemon.notify(systemd.daemon.Notification.READY)
 
     control_queues = filter(None, [env_control_queue, event_control_queue,
                                    disp_output_queue, pm25_control_queue,
-                                   web_data_queue])
+                                   web_data_queue, co2_control_queue])
 
     processes = filter(None, [env_process, event_process, disp_process,
-                              pm25_process, web_process])
+                              pm25_process, web_process, co2_process])
 
     setproctitle.setproctitle("aqi: main")
     while not stop_flag:
@@ -296,17 +344,25 @@ def run ():
 
         pm_packet = None
         env_packet = None
+        co2_packet = None
 
         while pm25_queue and not pm25_queue.empty():
             pm_packet = pm25_queue.get() ## blocks
 
+        while co2_queue and not co2_queue.empty():
+            co2_packet = co2_queue.get()
+
         while env_queue and not env_queue.empty():
             env_packet = env_queue.get()
+            if co2_control_queue != None and "hPa" in env_packet:
+                co2_control_queue.put(env_packet)
 
         try:
             if use_display:
                 if pm_packet != None:
                     disp_output_queue.put(pm_packet, block=False)
+                if co2_packet != None:
+                    disp_output_queue.put(co2_packet, block=False)
                 if env_packet != None:
                     disp_output_queue.put(env_packet, block=False)
         except:
@@ -315,6 +371,8 @@ def run ():
         if use_web_server:
             if pm_packet != None:
                 web_data_queue.put(pm_packet)
+            if co2_packet != None:
+                web_data_queue.put(co2_packet)
             if env_packet != None:
                 web_data_queue.put(env_packet)
 
@@ -330,6 +388,9 @@ def run ():
 
     while not pm25_queue.empty():
         p = pm25_queue.get()
+
+    while co2_queue and not co2_queue.empty():
+        e = co2_queue.get()
 
     for p in processes:
         print("INFO: [aqi] joining", p.name)

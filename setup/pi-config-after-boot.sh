@@ -129,7 +129,7 @@ pip3 install --upgrade --force-reinstall spidev
 pip3 install RPi.GPIO
 pip3 install wifi serial setproctitle systemd tzupdate
 pip3 install Adafruit-Blinka Adafruit-PlatformDetect Adafruit-PureIO
-pip3 install adafruit-circuitpython-bme680 adafruit-circuitpython-busdevice adafruit-circuitpython-pm25 adafruit-circuitpython-rgb-display adafruit-circuitpython-hts221
+pip3 install adafruit-circuitpython-bme680 adafruit-circuitpython-busdevice adafruit-circuitpython-pm25 adafruit-circuitpython-rgb-display adafruit-circuitpython-hts221 adafruit-circuitpython-scd30
 pip3 install CherryPy pillow numpy
 
 # ro sdcard setup

@@ -5,9 +5,10 @@ import os, os.path
 use_web_server      = True
 use_mini_tft        = True
 use_pm25_i2c        = True
-use_dht_sensor      = False
-use_bme680_sensor   = True
-use_hts221_sensor   = False
+use_dht_sensor      = False  # T, RH
+use_bme680_sensor   = True   # T, RH, hPa, Gas
+use_hts221_sensor   = False  # T, RH
+use_scd30_sensor    = False  # CO2, T, RH
 use_fahrenheit      = True
 
 # aqi function
@@ -40,6 +41,7 @@ def read_config_file ():
     global use_dht_sensor
     global use_bme680_sensor
     global use_hts221_sensor
+    global use_scd30_sensor
     global use_fahrenheit
     global temp_offset_celsius
     global screen_blank_secs
@@ -63,6 +65,7 @@ def read_config_file ():
         use_dht_sensor = systems.getboolean('dht', False)
         use_bme680_sensor = systems.getboolean('bme680', False)
         use_hts221_sensor = systems.getboolean('hts221', False)
+        use_scd30_sensor = systems.getboolean('scd30', False)
     if 'GENERAL' in config:
         general = config['GENERAL']
         aqi_function = general.get('aqi_function', 'EPA')
@@ -87,6 +90,7 @@ def write_config_file ():
         "dht" : "1" if use_dht_sensor else "0",
         "bme680" : "1" if use_bme680_sensor else "0",
         "hts221" : "1" if use_hts221_sensor else "0",
+        "scd30" : "1" if use_scd30_sensor else "0",
     }
     config['DISPLAY'] = {
         "modes" : str(display_modes),
