@@ -15,6 +15,7 @@ def init ():
     i2c = busio.I2C(board.SCL, board.SDA)
     sensor = adafruit_bme680.Adafruit_BME680_I2C(i2c)
     start_time = time.time()
+    return sensor
 
 def read_packet ():
     # this is what I'm guessing the RH correction is based on the

@@ -45,6 +45,7 @@ def init (emulate=False, use_i2c=True):
             import adafruit_pm25.uart
             uart = serial.Serial("/dev/ttyS0", baudrate=9600, timeout=0.25)
             pm25 = adafruit_pm25.uart.PM25_UART(uart, None)
+    return pm25
             
 def stop ():
     global _emulate
