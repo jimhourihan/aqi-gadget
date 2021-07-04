@@ -58,11 +58,11 @@ append2() {
 #raspi-config nonint do_change_hostname aqi-gadget
 apt update
 apt upgrade -y
-apt install dnsmasq -y
-apt-get install busybox-syslogd -y
-apt-get remove --purge rsyslog -y
-apt-get remove -y --purge triggerhappy logrotate dphys-swapfile fake-hwclock
-apt-get -y autoremove --purge
+apt install dnsmasq hostapd -y
+apt install busybox-syslogd -y
+apt remove --purge rsyslog -y
+apt remove -y --purge triggerhappy logrotate dphys-swapfile fake-hwclock
+apt -y autoremove --purge
 
 cat > /boot/aqi-gadget-info <<EOF
 serial_number 000
@@ -129,13 +129,13 @@ pip3 install --upgrade --force-reinstall spidev
 pip3 install RPi.GPIO
 pip3 install wifi serial setproctitle systemd tzupdate
 pip3 install Adafruit-Blinka Adafruit-PlatformDetect Adafruit-PureIO
-pip3 install adafruit-circuitpython-bme680 adafruit-circuitpython-busdevice adafruit-circuitpython-pm25 adafruit-circuitpython-rgb-display
+pip3 install adafruit-circuitpython-bme680 adafruit-circuitpython-busdevice adafruit-circuitpython-pm25 adafruit-circuitpython-rgb-display adafruit-circuitpython-hts221
 pip3 install CherryPy pillow numpy
 
 # ro sdcard setup
 # Replace log management with busybox (use logread if needed)
 # Installing ntp and busybox-syslogd...
-apt-get -y install ntp busybox-syslogd; dpkg --purge rsyslog
+apt -y install ntp busybox-syslogd; dpkg --purge rsyslog
 
 # Add fastboot, noswap and/or ro to end of /boot/cmdline.txt
 append2 /boot/cmdline.txt fastboot fastboot

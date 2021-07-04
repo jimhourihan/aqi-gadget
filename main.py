@@ -23,7 +23,9 @@ signal.signal(signal.SIGTERM, signal_handler)
 
 stop_flag       = False
 use_display     = aqi_gadget_config.use_mini_tft
-use_env_sensor  = aqi_gadget_config.use_dht_sensor or aqi_gadget_config.use_bme680_sensor
+use_env_sensor  = aqi_gadget_config.use_dht_sensor \
+    or aqi_gadget_config.use_bme680_sensor \
+    or aqi_gadget_config.use_hts221_sensor
 use_web_server  = aqi_gadget_config.use_web_server
 is_usb_gadget   = system_tools.check_usb_gadget_attached()
 blank_time_secs = aqi_gadget_config.screen_blank_secs
@@ -49,6 +51,23 @@ def dht_loop (out_queue, control_queue):
         time.sleep(aqi_gadget_config.env_polling_secs)
     dht_service.stop()
 
+def hts221_loop (out_queue, control_queue):
+    import hts221_service
+    hts221_service.init()
+    setproctitle.setproctitle("aqi: hts221_loop")
+    while control_queue.empty():
+        p = hts221_service.read_packet()
+        if p:
+            out_queue.put(p)
+        elif isinstance(p, str):
+            if p == "FAIL":
+                print("ERROR: [aqi] hts221 failure")
+                break
+        else:
+            pass
+        time.sleep(aqi_gadget_config.env_polling_secs)
+    hts221_service.stop()
+
 def bme680_loop (out_queue, control_queue):
     import bme680_service
     bme680_service.init()
@@ -72,6 +91,8 @@ def env_loop (out_queue, control_queue):
         dht_loop(out_queue, control_queue)
     elif aqi_gadget_config.use_bme680_sensor:
         bme680_loop(out_queue, control_queue)
+    elif aqi_gadget_config.use_hts221_sensor:
+        hts221_loop(out_queue, control_queue)
     else:
         print("ERROR: [aqi] misconfigured env sensor")
     print("INFO: [aqi] shutting down env sensor")

@@ -7,6 +7,7 @@ use_mini_tft        = True
 use_pm25_i2c        = True
 use_dht_sensor      = False
 use_bme680_sensor   = True
+use_hts221_sensor   = False
 use_fahrenheit      = True
 
 # aqi function
@@ -27,7 +28,7 @@ env_polling_secs    = 15
 
 # default display modes
 default_display_modes = [["AQI", "RAW25", "TEMP", "RHUM"],
-                         "AQI", "RAW25", "GRAPH", "TEMP", "RHUM", "MBARS", "GAS",
+                         "AQI", "RAW25", "TEMP", "RHUM", "MBARS", "GAS",
                          ["HOST", "IP", "AQITYPE", "AQIFUNC"]]
 
 display_modes = default_display_modes
@@ -38,6 +39,7 @@ def read_config_file ():
     global use_pm25_i2c
     global use_dht_sensor
     global use_bme680_sensor
+    global use_hts221_sensor
     global use_fahrenheit
     global temp_offset_celsius
     global screen_blank_secs
@@ -60,6 +62,7 @@ def read_config_file ():
         use_pm25_i2c = systems.getboolean('pm25_i2c', False)
         use_dht_sensor = systems.getboolean('dht', False)
         use_bme680_sensor = systems.getboolean('bme680', False)
+        use_hts221_sensor = systems.getboolean('hts221', False)
     if 'GENERAL' in config:
         general = config['GENERAL']
         aqi_function = general.get('aqi_function', 'EPA')
@@ -83,6 +86,7 @@ def write_config_file ():
         "pm25_i2c" : "1" if use_pm25_i2c else "0",
         "dht" : "1" if use_dht_sensor else "0",
         "bme680" : "1" if use_bme680_sensor else "0",
+        "hts221" : "1" if use_hts221_sensor else "0",
     }
     config['DISPLAY'] = {
         "modes" : str(display_modes),

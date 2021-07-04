@@ -27,7 +27,11 @@ You can get all of the parts from Adafruit:
  * I2C Plantower Sensor: https://www.adafruit.com/product/4632
  * TFT mini display: https://www.adafruit.com/product/4393
  * Pi Zero W: https://www.adafruit.com/product/3400
+
+For temperature and humidity and optionally pressure and VOC:
+
  * BME680: https://www.adafruit.com/product/3660
+ * HTS221: https://www.adafruit.com/product/4535
 
 A Pi Zero case is probably a good idea too.
 
@@ -57,7 +61,7 @@ The URLs are:
 
     http://IPADDRESS/aqi        :: Computed AQI (in selected index)
     http://IPADDRESS/graph      :: Histogram of particle sizes
-    http://IPADDRESS/env        :: BME680 output (temp, humidity, etc)
+    http://IPADDRESS/env        :: BME680/HST221 output (temp, humidity, etc)
     http://IPADDRESS/settings   :: Device settings page (USB mode only)
     http://IPADDRESS/status     :: Device status page
     http://IPADDRESS/raw        :: Raw python tuple of collected data (for e.g. curl)
