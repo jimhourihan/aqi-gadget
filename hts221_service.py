@@ -31,8 +31,6 @@ def read_packet ():
         "C" : tempC,
         "F" : tempC * 1.8 + 32.0,
         "H" : h,
-        "hPa" : 1013.0,
-        "Gas" : "",
         "time" : t
     }
 
