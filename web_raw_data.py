@@ -631,8 +631,8 @@ class RawDataServer (object):
     def __init__ (self, ask_queue, data_queue):
         self.ask_queue = ask_queue
         self.data_queue = data_queue
-        self.pm_value = None
-        self.env_value = {"F" : 70.5, "C" : 21.4, "H" : 60.6}
+        self.pm_value = {}
+        self.env_value = {"F" : 70.5, "C" : 21.4, "H" : 60.6, "hPa" : 1013.25}
 
     def read_queue (self):
         while not self.data_queue.empty():
@@ -643,9 +643,9 @@ class RawDataServer (object):
                     cherrypy.engine.exit()
             elif isinstance(v, dict):
                 if "pm25" in v:
-                    self.pm_value = v
+                    self.pm_value.update(v)
                 else:
-                    self.env_value = v
+                    self.env_value.update(v)
 
     @cherrypy.expose
     def internal_forward_to (self, location):
@@ -789,10 +789,10 @@ class RawDataServer (object):
         count10    = self.pm_value["pm10_count"]
         count25    = self.pm_value["pm25_count"]
         tcount     = count03 + count05 + count10 + count25
-        ncount03   = count03 / tcount # normalized
-        ncount05   = count05 / tcount
-        ncount10   = count10 / tcount
-        ncount25   = count25 / tcount
+        ncount03   = count03 / tcount if tcount > 0 else 0 # normalized
+        ncount05   = count05 / tcount if tcount > 0 else 0
+        ncount10   = count10 / tcount if tcount > 0 else 0
+        ncount25   = count25 / tcount if tcount > 0 else 0
         avgD       = ncount03 * 0.3 + ncount05 * 0.5 + ncount10 * 1.0 + ncount25 * 2.5
         count      = tcount if tcount < 1000 else str(int(tcount/1000.0)) + "k"
         h          = self.env_value["H"]

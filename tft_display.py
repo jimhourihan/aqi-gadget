@@ -110,7 +110,7 @@ def draw_single_value (out_draw, value, rgb, level, scale_name, delta=None):
 
     tsize = 22
     (x, y) = (width - tsize - 10, height / 2.0)
-    if delta != None and math.fabs(delta) > .05:
+    if delta != None and math.fabs(delta) > 1:
         if delta > 0:
             out_draw.polygon([(x,y), (x + tsize,y), (x + tsize/2.0, y - tsize/1.4)], fill=value_fg)
         else:
@@ -257,7 +257,7 @@ def draw_packet_into (mode, packet, draw_obj, image_obj):
         delta = packet[key2]
         if len(level) > 14:
             level = level[:14]
-        draw_single_value(draw_obj, aqi, rgb, level, name, delta)
+        draw_single_value(draw_obj, aqi, rgb, level, name, delta * 20.0)
 
     elif mode == "RAW25":
         aqifunc = aqi_gadget_config.aqi_function
@@ -265,13 +265,13 @@ def draw_packet_into (mode, packet, draw_obj, image_obj):
         c = converter(packet["pm25_15s"], packet["H"])
         v = ("{:.0f}" if c >= 10.0 else "{:.1f}").format(c)
         delta = packet["pm25_delta"]
-        draw_single_value(draw_obj, v, (.20, .20, .20), "pm2.5 Conc", "µg/m^3", delta)
+        draw_single_value(draw_obj, v, (.20, .20, .20), "pm2.5 Conc", "µg/m^3", delta * 20.0)
 
     elif mode == "RAW100":
         c = packet["pm100_15s"]
         v = ("{:.0f}" if c >= 10.0 else "{:.1f}").format(c)
         delta = packet["pm100_delta"]
-        draw_single_value(draw_obj, v, (.20, .20, .20), "pm10 Conc", "µg/m^3", delta)
+        draw_single_value(draw_obj, v, (.20, .20, .20), "pm10 Conc", "µg/m^3", delta * 20.0)
 
     elif mode == "MBARS":
         v = "{:.0f}".format(packet["hPa"]) if "hPa" in packet else 1013
@@ -321,8 +321,9 @@ def draw_packet_into (mode, packet, draw_obj, image_obj):
         if co2 == "N/A":
             draw_single_value(draw_obj, co2, (0.5, 0.5, 0.5), "CO2", "ppm")
         else:
+            co2_delta = int(packet["CO2_delta"]) if "CO2_delta" in packet else 0
             r = aqi_util.co2_level(co2)
-            draw_single_value(draw_obj, co2, r[3], r[2], "CO2 ppm")
+            draw_single_value(draw_obj, co2, r[3], r[2], "CO2 ppm", co2_delta * 0.1)
 
     elif mode == "CPU":
         info = get_cpu_info()

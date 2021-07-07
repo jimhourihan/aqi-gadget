@@ -3,9 +3,10 @@ import board
 import adafruit_scd30
 import aqi_gadget_config
 
-i2c = None
-sensor = None
+i2c        = None
+sensor     = None
 start_time = None
+buffer     = []
 
 def init ():
     global i2c
@@ -27,6 +28,7 @@ def read_packet ():
     global i2c
     global sensor
     global start_time
+    global buffer
 
     t        = time.time()
     offsetC  = aqi_gadget_config.temp_offset_celsius
@@ -34,12 +36,21 @@ def read_packet ():
     h_factor = 1.0 / (2.0 ** (offsetC / 11.0))
     h        = sensor.relative_humidity * h_factor
 
+    co2 = sensor.CO2
+    buffer.append(co2)
+    if len(buffer) > 24:
+        buffer.pop(0)
+    bsize = len(buffer)
+    avg_1m = sum(buffer) / bsize if bsize > 0 else 0
+
     return {
         "C" : tempC,
         "F" : tempC * 1.8 + 32.0,
         "H" : h,
         "time" : t,
-        "CO2" : sensor.CO2
+        "CO2" : co2,
+        "CO2_delta" : (co2 - avg_1m),
+        "CO2_1m" : avg_1m,
     }
 
 def stop ():
