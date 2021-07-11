@@ -244,7 +244,7 @@ def run ():
             # multiple values. cherrypy will only use the first
             ipaddress = " ".join([x for x in ipaddresses if x[0:-1] == "10.10.10."])
         else:
-            ipaddress = " ".join([x for x in ipaddresses if x[0:-1] != "10.10.10."])
+            ipaddress = [x for x in ipaddresses if x[0:-1] != "10.10.10."][0]
 
     if ipaddress == "127.0.0.1":
         use_web_server = False
